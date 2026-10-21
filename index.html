@@ -1340,7 +1340,7 @@ function loop(){
 
 
 /* ================= UI: shared ================= */
-function post(){try{if(window.parent!==window)window.parent.postMessage({dmHeight:document.documentElement.scrollHeight},"*")}catch(e){}}
+function post(){try{if(window.parent===window)return;const w=document.querySelector(".wrap");const h=Math.ceil((w?w.getBoundingClientRect().bottom+(window.scrollY||0):document.body.scrollHeight)+8);window.parent.postMessage({dmHeight:h},"*")}catch(e){}}window.addEventListener("load",()=>{post();setTimeout(post,800)});window.addEventListener("resize",()=>setTimeout(post,100));
 try{new ResizeObserver(post).observe(document.body)}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}

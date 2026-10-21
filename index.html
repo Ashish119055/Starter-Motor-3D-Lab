@@ -1,0 +1,1723 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>સ્ટાર્ટર મોટર 3D લેબ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@400;500;600;700&family=Hind:wght@400;500;600;700&family=Mukta+Vaani:wght@600;800&family=Mukta:wght@700;800&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: workshop bay — one dark 3D viewport on top shared by every tab, job-card panel below it */
+:root{
+  --bg:#eef2f5; --panel:#ffffff; --ink:#18222d; --muted:#5b6876; --line:#d3dbe3;
+  --accent:#1565c0; --accent-ink:#ffffff; --hl:#f2a900; --good:#2e7d4f; --bad:#c0392b; --soft:#e6eef8;
+  --bay:#1b2430; --bay-ink:#e3e9ef; --bay-btn:rgba(255,255,255,.1); --bay-line:rgba(255,255,255,.18);
+  --meter:#0f1d27; --meter-fg:#7dffb0; --meter-dim:#5f8a74;
+  --f-disp:"Mukta Vaani","Mukta","Hind Vadodara","Hind","Noto Sans Gujarati","Noto Sans Devanagari",system-ui,sans-serif;
+  --f-body:"Hind Vadodara","Hind","Noto Sans Gujarati","Noto Sans Devanagari",system-ui,sans-serif;
+  --f-mono:"Share Tech Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --panel:#17202a; --ink:#e3e9ef; --muted:#9aa8b6; --line:#2a3642;
+  --accent:#5aa2f0; --accent-ink:#06121f; --hl:#ffc233; --good:#5cc98a; --bad:#ff7a6b; --soft:#1c2a3a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --panel:#17202a; --ink:#e3e9ef; --muted:#9aa8b6; --line:#2a3642;
+  --accent:#5aa2f0; --accent-ink:#06121f; --hl:#ffc233; --good:#5cc98a; --bad:#ff7a6b; --soft:#1c2a3a; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px}
+h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(1.55rem,4.5vw,2.2rem);line-height:1.15;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted)}
+h2{font-family:var(--f-disp);font-weight:800;font-size:1.22rem;margin:0;line-height:1.3;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+p{margin:0}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);display:flex;gap:6px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+.tabs button{flex:0 0 auto;font:600 .98rem var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+
+.viewer{position:relative;height:clamp(330px,60vh,580px);border-radius:14px;overflow:hidden;background:var(--bay);touch-action:none}
+.viewer canvas{display:block;width:100%;height:100%;cursor:grab}
+.viewer canvas:active{cursor:grabbing}
+.vbtns{position:absolute;top:10px;right:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;pointer-events:none}
+.vbtns button{pointer-events:auto;font:600 .85rem var(--f-body);color:var(--bay-ink);background:var(--bay-btn);border:1px solid var(--bay-line);border-radius:8px;padding:5px 10px;cursor:pointer;backdrop-filter:blur(4px)}
+.vbtns button[aria-pressed="true"]{background:var(--hl);color:#1b1b1b;border-color:var(--hl)}
+.vhelp{position:absolute;left:12px;bottom:10px;right:12px;color:#9fb0c2;font-size:.78rem;pointer-events:none}
+.tag{position:absolute;left:0;top:0;transform:translate(-50%,-130%);background:var(--hl);color:#1b1b1b;font-weight:700;font-size:.9rem;padding:3px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.tag::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:var(--hl)}
+.vmsg{position:absolute;inset:0;display:grid;place-items:center;color:var(--bay-ink);text-align:center;padding:20px}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:10px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 .95rem var(--f-body);border-radius:8px;padding:8px 14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.pill{display:inline-block;font-size:.8rem;font-weight:600;padding:1px 9px;border-radius:999px;background:var(--soft);color:var(--accent)}
+.muted{color:var(--muted)}
+.note{border-left:4px solid var(--hl);background:var(--soft);padding:8px 12px;border-radius:0 8px 8px 0;font-size:.95rem}
+.pinfo{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.bignum{font-family:var(--f-mono);font-size:2rem;line-height:1;background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:8px 12px;min-width:3.2rem;text-align:center}
+.pname{font-family:var(--f-disp);font-weight:800;font-size:1.35rem;line-height:1.25}
+.pen{color:var(--muted);font-size:.95rem}
+.chips{display:grid;gap:10px}
+.chipgrp{display:grid;gap:6px}
+.chipgrp h3{font-size:.85rem;color:var(--muted);letter-spacing:.03em}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 .88rem var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:4px 9px;cursor:pointer}
+.chip b{font-family:var(--f-mono);font-weight:400;color:var(--accent);margin-right:4px}
+.chip[aria-pressed="true"]{border-color:var(--hl);box-shadow:0 0 0 2px var(--hl) inset}
+.gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gauge{background:var(--meter);color:var(--meter-fg);border-radius:10px;padding:8px 12px;display:grid;gap:2px;min-width:0}
+.gauge span{font-size:.75rem;color:var(--meter-dim)}
+.gauge b{font-family:var(--f-mono);font-weight:400;font-size:1.05rem;line-height:1.25;overflow-wrap:anywhere}
+.steps{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 .85rem var(--f-mono);cursor:pointer}
+.dot[aria-current="step"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tgrid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:860px){.tgrid{grid-template-columns:270px 1fr}}
+.tlist{display:grid;gap:6px;align-content:start}
+.tlist button{text-align:left;font:500 .93rem var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 10px;cursor:pointer;display:flex;gap:8px;align-items:baseline}
+.tlist button b{font-family:var(--f-mono);font-weight:400;color:var(--muted)}
+.tlist button[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}
+.tlist button.done::after{content:"✓";margin-left:auto;color:var(--good);font-weight:700}
+.meter{background:var(--meter);color:var(--meter-fg);border-radius:12px;padding:12px 16px;display:grid;gap:4px}
+.meter .cap{font-size:.8rem;color:var(--meter-dim)}
+.meter .val{font-family:var(--f-mono);font-size:clamp(1.5rem,6vw,2.3rem);line-height:1.15;overflow-wrap:anywhere}
+.fb{border-radius:8px;padding:8px 12px;font-weight:500}
+.fb.ok{background:color-mix(in srgb,var(--good) 16%,var(--panel));border:1px solid var(--good)}
+.fb.no{background:color-mix(in srgb,var(--bad) 14%,var(--panel));border:1px solid var(--bad)}
+ol.tsteps{margin:0;padding-left:1.3em;display:grid;gap:2px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.95rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.score{font-family:var(--f-mono);font-size:1.1rem}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;font:500 1rem var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:9px 12px;cursor:pointer}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 16%,var(--panel))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,var(--panel))}
+footer{color:var(--muted);font-size:.85rem;text-align:center;padding-top:6px}
+.startbtn{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:30px;width:96px;height:96px;border-radius:50%;border:4px solid #cfd5db;background:radial-gradient(circle at 35% 30%,#ff6b5e,#c62828 55%,#7f0000);color:#fff;display:grid;place-content:center;gap:0;font:800 1.15rem var(--f-mono);line-height:1.1;box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 -4px 8px rgba(0,0,0,.35);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:transform .08s}
+.startbtn small{font:600 .68rem var(--f-body)}
+.startbtn.on{transform:scale(.92);box-shadow:0 0 0 6px rgba(255,140,0,.35),0 0 28px #ff8f00,inset 0 4px 10px rgba(0,0,0,.4)}
+.vhelp{right:120px}
+.gauges.g4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:560px){.gauges.g4{grid-template-columns:repeat(2,1fr)}}
+.phases{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.phases li{font-size:.82rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted);display:flex;gap:6px}
+.phases li b{font-family:var(--f-mono);font-weight:400}
+.phases li.on{background:var(--hl);color:#1b1b1b;border-color:var(--hl);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+.btn[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}
+
+.hdr{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-start;justify-content:space-between}
+.hgrp{display:grid;gap:2px;min-width:0;flex:1 1 320px}
+.langs{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+.langs button{font:700 .95rem var(--f-body);min-width:44px;height:38px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.langs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#voiceBtn[aria-pressed="true"]{background:var(--hl);color:#1b1b1b;border-color:var(--hl)}
+.vnote{margin:0;font-size:.85rem;color:var(--bad)}
+.scope{background:var(--meter);border-radius:12px;padding:8px 10px;display:grid;gap:4px}
+.scope .scap{font-size:.8rem;color:var(--meter-dim)}
+.scope canvas{display:block;width:100%;height:150px}
+.tlist button.miss::after{content:"✗";margin-left:auto;color:var(--bad);font-weight:700}
+.tblwrap{overflow-x:auto}
+table.rep{border-collapse:collapse;width:100%;font-size:.92rem;min-width:560px}
+table.rep th,table.rep td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.rep th{background:var(--soft);font-weight:700}
+table.rep tr.ok td:nth-child(4){color:var(--good);font-weight:600}
+table.rep tr.no td:nth-child(4){color:var(--bad);font-weight:600}
+.eqs{display:grid;gap:6px}
+.eqs code{font-family:var(--f-mono);font-size:1.05rem;background:var(--meter);color:var(--meter-fg);padding:8px 12px;border-radius:8px;overflow-x:auto;white-space:nowrap}
+.note.warn{border-left-color:var(--bad)}
+.svgwrap{overflow-x:auto}
+svg.circ,svg.chart{display:block;width:100%;min-width:520px;height:auto}
+svg.circ .bx{fill:var(--soft);stroke:var(--ink);stroke-width:1.5}
+svg.circ .arm{fill:none;stroke:var(--ink);stroke-width:2}
+svg.circ .zig{fill:none;stroke:#c77b43;stroke-width:3}
+svg.circ .wireM,svg.circ .wireM path{fill:none;stroke:#c62828;stroke-width:5;stroke-linejoin:round}
+svg.circ .wireC,svg.circ .wireC path{fill:none;stroke:#e08a1e;stroke-width:2.5;stroke-linejoin:round}
+svg.circ .gnd{fill:none;stroke:var(--ink);stroke-width:2}
+svg.circ text{fill:var(--ink)}
+svg.circ .tt{font:700 14px var(--f-body)}svg.circ .ts{font:500 12px var(--f-body)}svg.circ .tm{font:400 12px var(--f-mono)}
+svg.chart .gl{stroke:var(--line);stroke-width:1}svg.chart .ax{stroke:var(--muted);stroke-width:1.5}
+svg.chart .tk{fill:var(--muted);font:400 11px var(--f-mono)}svg.chart .lb{font:700 13px var(--f-body)}
+svg.chart .c1{fill:none;stroke:var(--accent);stroke-width:3}svg.chart .c1t{fill:var(--accent)}
+svg.chart .c2{fill:none;stroke:#d9480f;stroke-width:3}svg.chart .c2t{fill:#d9480f}
+svg.chart .c3{fill:none;stroke:var(--good);stroke-width:3;stroke-dasharray:7 5}svg.chart .c3t{fill:var(--good)}
+svg.plan .pr{fill:#4a3f36;stroke:var(--ink);stroke-width:1.5}svg.plan .prin{fill:var(--panel);stroke:none}svg.plan .pt{stroke:#4a3f36;stroke-width:3}
+svg.plan .pp{fill:#b8c0c8;stroke:var(--ink);stroke-width:1.5}svg.plan .ps{fill:#d8b04c;stroke:var(--ink);stroke-width:1.5}svg.plan .pin{fill:var(--ink)}
+svg.plan .pc{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:6 4}
+svg.plan text{font:600 14px var(--f-body)}svg.plan .t2{fill:#7c8691}svg.plan .t3{fill:#a07d22}svg.plan .t4{fill:var(--accent)}svg.plan .tm{font:400 13px var(--f-mono)}
+.plist{margin:0;padding-left:1.2em;display:grid;gap:4px}
+</style>
+<div class="wrap">
+  <header class="hdr">
+    <div class="hgrp"><h1 data-t="h1">સ્ટાર્ટર મોટર 3D લેબ</h1><p class="sub" data-t="sub"></p></div>
+    <div class="langs" role="group" aria-label="Language / ભાષા / भाषा">
+      <button data-lang="gu" aria-pressed="true" lang="gu">ગુજ</button>
+      <button data-lang="hi" aria-pressed="false" lang="hi">हिं</button>
+      <button data-lang="en" aria-pressed="false" lang="en">EN</button>
+      <button id="voiceBtn" aria-pressed="false" data-ta="voice">🔊</button>
+    </div>
+  </header>
+  <p class="vnote" id="vnote" hidden></p>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="t-work" aria-controls="v-work" aria-selected="true" data-t="tabWork"></button>
+    <button role="tab" id="t-parts" aria-controls="v-parts" aria-selected="false" data-t="tabParts"></button>
+    <button role="tab" id="t-dis" aria-controls="v-dis" aria-selected="false" data-t="tabDis"></button>
+    <button role="tab" id="t-insp" aria-controls="v-insp" aria-selected="false" data-t="tabInsp"></button>
+    <button role="tab" id="t-test" aria-controls="v-test" aria-selected="false" data-t="tabTest"></button>
+    <button role="tab" id="t-theory" aria-controls="v-theory" aria-selected="false" data-t="tabTheory"></button>
+    <button role="tab" id="t-quiz" aria-controls="v-quiz" aria-selected="false" data-t="tabQuiz"></button>
+  </nav>
+
+  <div class="viewer" id="viewer">
+    <canvas id="cv" aria-label="3D starter motor"></canvas>
+    <div class="vbtns">
+      <button id="bCur" aria-pressed="true" hidden data-t="bCur"></button>
+      <button id="bMag" aria-pressed="true" hidden data-t="bMag"></button>
+      <button id="bPlan" aria-pressed="false" data-t="bPlan"></button>
+      <button id="bCut" aria-pressed="true" data-t="bCut"></button>
+      <button id="bXray" aria-pressed="false" data-t="bXray"></button>
+      <button id="bSpin" aria-pressed="false" data-t="bSpin"></button>
+      <button id="bHome" data-t="bHome"></button>
+    </div>
+    <div class="tag" id="tag" hidden></div>
+    <button class="startbtn" id="startBtn" hidden data-ta="startAria"><span>START</span><small data-t="hold"></small></button>
+    <div class="vhelp" data-t="vhelp"></div>
+    <div class="vmsg" id="vmsg" hidden data-t="vmsg"></div>
+  </div>
+
+  <section id="v-work" role="tabpanel" aria-labelledby="t-work" style="display:grid;gap:12px">
+    <div class="gauges g4">
+      <div class="gauge"><span data-t="gKey"></span><b id="gKey">OFF</b></div>
+      <div class="gauge"><span data-t="gAmp"></span><b id="gAmp">0 A</b></div>
+      <div class="gauge"><span data-t="gArm"></span><b id="gArm">0 rpm</b></div>
+      <div class="gauge"><span data-t="gEng"></span><b id="gEng"></b></div>
+    </div>
+    <div class="scope"><div class="scap" data-t="scope"></div><canvas id="scope"></canvas></div>
+    <div class="panel">
+      <div class="row">
+        <button class="btn" id="wFuel" aria-pressed="true"></button>
+        <button class="btn" id="wSlow" aria-pressed="false"></button>
+        <button class="btn" id="wSnd" aria-pressed="true"></button>
+        <button class="btn" id="wVib" aria-pressed="true"></button>
+        <button class="btn" id="wStop"></button>
+      </div>
+      <ol class="phases" id="phases"></ol>
+      <h2 id="phTitle"></h2>
+      <p id="phText"></p>
+      <div class="note" id="phNote"></div>
+      <div class="note" id="planInfo" hidden data-t="planInfo"></div>
+      <div class="legend">
+        <span><i style="background:#ffc400"></i><span data-t="lgMain"></span></span>
+        <span><i style="background:#4dd0e1"></i><span data-t="lgPull"></span></span>
+        <span><i style="background:#c792ff"></i><span data-t="lgHold"></span></span>
+        <span><i style="background:#58c4ff;height:3px"></i><span data-t="lgField"></span></span>
+        <span><i style="background:#c62828"></i><span data-t="lgN"></span></span><span><i style="background:#1e5ac8"></i><span data-t="lgS"></span></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-parts" role="tabpanel" aria-labelledby="t-parts" hidden style="display:grid;gap:12px">
+    <div class="panel">
+      <div class="pinfo">
+        <div class="bignum" id="pNum">—</div>
+        <div style="display:grid;gap:4px;min-width:0">
+          <div class="pname" id="pName"></div>
+          <div class="pen" id="pEn"></div>
+          <div><span class="pill" id="pGrp"></span></div>
+          <p id="pDesc"></p>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="pPrev" data-t="pPrev"></button>
+        <button class="btn" id="pNext" data-t="pNext"></button>
+        <button class="btn" id="pAll" data-t="pClear"></button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 data-t="pList"></h2>
+      <div class="chips" id="chips"></div>
+      <div class="note" data-t="pNote"></div>
+    </div>
+  </section>
+
+  <section id="v-dis" role="tabpanel" aria-labelledby="t-dis" hidden>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="steps" id="dDots"></div>
+        <div class="row">
+          <button class="btn" id="dPrev" data-t="dPrev"></button>
+          <button class="btn pri" id="dNext" data-t="dNext"></button>
+          <button class="btn" id="dReset" data-t="dReset"></button>
+        </div>
+      </div>
+      <h2 id="dTitle"></h2>
+      <p id="dText"></p>
+      <div class="note" id="dNote"></div>
+    </div>
+  </section>
+
+  <section id="v-insp" role="tabpanel" aria-labelledby="t-insp" hidden style="display:grid;gap:12px">
+    <div class="tgrid">
+      <div class="panel" style="align-content:start">
+        <div class="row" style="justify-content:space-between"><h2 data-t="iHead"></h2><span class="score" id="iScore">0 / 0</span></div>
+        <div class="tlist" id="iList"></div>
+        <button class="btn" id="iNewJob" data-t="iNew"></button>
+      </div>
+      <div class="panel" style="align-content:start">
+        <div class="row" style="justify-content:space-between"><h2 id="iName"></h2><span class="pill" id="iJob"></span></div>
+        <p class="muted" data-t="iHint"></p>
+        <h3 data-t="iLook"></h3>
+        <p id="iLookTxt"></p>
+        <div class="row" id="iClutch" hidden>
+          <button class="btn" id="iRotF" data-t="cFwd"></button>
+          <button class="btn" id="iRotR" data-t="cRev"></button>
+          <span id="iRotRes" class="muted" aria-live="polite"></span>
+        </div>
+        <h3 data-t="iFind"></h3>
+        <div class="opts" id="iOpts"></div>
+        <div class="fb" id="iFb" hidden aria-live="polite"></div>
+        <div class="row"><button class="btn" id="iCompare" hidden></button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 data-t="iReport"></h2>
+      <div class="tblwrap" id="iRepWrap" hidden><table class="rep"><thead><tr><th>#</th><th data-t="iColItem"></th><th data-t="iColYou"></th><th data-t="iColAct"></th><th data-t="iColFix"></th></tr></thead><tbody id="iRep"></tbody></table></div>
+      <p class="muted" id="iRepEmpty" data-t="iRepEmpty"></p>
+    </div>
+  </section>
+
+  <section id="v-test" role="tabpanel" aria-labelledby="t-test" hidden>
+    <div class="tgrid">
+      <div class="panel" style="align-content:start">
+        <div class="row" style="justify-content:space-between"><h2 data-t="tHead"></h2><span class="score" id="tScore">0 / 0</span></div>
+        <div class="tlist" id="tList"></div>
+      </div>
+      <div class="panel">
+        <h2 id="tName"></h2>
+        <dl class="kv">
+          <dt data-t="tAimL"></dt><dd id="tAim"></dd>
+          <dt data-t="tToolL"></dt><dd id="tTool"></dd>
+          <dt data-t="tSpecL"></dt><dd id="tSpec"></dd>
+        </dl>
+        <h3 data-t="tStepsL"></h3>
+        <ol class="tsteps" id="tSteps"></ol>
+        <div class="row">
+          <span class="pill" id="tSample"></span>
+          <button class="btn pri" id="tMeasure" data-t="measure"></button>
+          <button class="btn" id="tNew" data-t="newSample"></button>
+        </div>
+        <div class="meter" aria-live="polite">
+          <div class="cap" id="tCap"></div>
+          <div class="val" id="tVal">– – –</div>
+        </div>
+        <div class="row">
+          <span class="muted" data-t="howPart"></span>
+          <button class="btn" id="tGood" disabled data-t="good"></button>
+          <button class="btn" id="tBad" disabled data-t="bad"></button>
+        </div>
+        <div class="fb" id="tFb" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-theory" role="tabpanel" aria-labelledby="t-theory" hidden>
+    <div id="thBody" style="display:grid;gap:12px"></div>
+  </section>
+
+  <section id="v-quiz" role="tabpanel" aria-labelledby="t-quiz" hidden>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2 id="qHead"></h2><span class="score" id="qScore"></span></div>
+      <p id="qText" style="font-size:1.08rem;font-weight:600"></p>
+      <div class="opts" id="qOpts"></div>
+      <div class="fb" id="qFb" hidden></div>
+      <div class="row"><button class="btn pri" id="qNext"></button></div>
+    </div>
+  </section>
+
+  <footer data-t="foot"></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+/* ================= LANGUAGE ================= */
+const LIDX={gu:0,hi:1,en:2};
+let LANG="gu";try{const s=localStorage.getItem("sm3d-lang");if(s&&s in LIDX)LANG=s}catch(e){}
+const L=a=>Array.isArray(a)?(a[LIDX[LANG]]??a[0]):(a==null?"":a);
+const U={
+ h1:["સ્ટાર્ટર મોટર 3D લેબ","स्टार्टर मोटर 3D लैब","Starter Motor 3D Lab"],
+ sub:["આંગળીથી ફેરવો, ઝૂમ કરો, ભાગ પર ટેપ કરો. START દબાવી કામ જુઓ, ભાગ છૂટા કરો, ઇન્સ્પેક્શન અને ટેસ્ટિંગ જાતે કરો.","उंगली से घुमाएँ, ज़ूम करें, भाग पर टैप करें। START दबाकर काम देखें, पुर्ज़े खोलें, इंस्पेक्शन और टेस्टिंग खुद करें।","Drag to rotate, pinch to zoom, tap any part. Hold START to see it work, dismantle it, and do the inspection and tests yourself."],
+ tabWork:["⚡ સિમ્યુલેટર","⚡ सिम्युलेटर","⚡ Simulator"],tabParts:["🧩 ભાગો","🧩 भाग","🧩 Parts"],tabDis:["🔧 ખોલવું","🔧 खोलना","🔧 Dismantle"],
+ tabInsp:["👁 ઇન્સ્પેક્શન","👁 इंस्पेक्शन","👁 Inspection"],tabTest:["🔍 ટેસ્ટિંગ","🔍 टेस्टिंग","🔍 Testing"],tabTheory:["📘 થિયરી","📘 थ्योरी","📘 Theory"],tabQuiz:["📝 MCQ","📝 MCQ","📝 MCQ"],
+ bCur:["⚡ કરંટ","⚡ करंट","⚡ Current"],bMag:["🧲 ચુંબક","🧲 चुंबक","🧲 Magnetism"],bCut:["✂️ કટ સેક્શન","✂️ कट सेक्शन","✂️ Cut section"],bXray:["👁 પારદર્શક","👁 पारदर्शी","👁 X-ray"],bSpin:["🔄 ફેરવો","🔄 घुमाएँ","🔄 Auto-rotate"],bHome:["⌂ મૂળ દૃશ્ય","⌂ मूल दृश्य","⌂ Reset view"],
+ vhelp:["ખેંચો = ફેરવો · બે આંગળી કે સ્ક્રોલ = ઝૂમ · ટેપ = ભાગનું નામ","खींचें = घुमाएँ · दो उंगली या स्क्रॉल = ज़ूम · टैप = भाग का नाम","Drag = rotate · pinch or scroll = zoom · tap = part name"],
+ vmsg:["3D મોડલ લોડ ન થયું. ઇન્ટરનેટ ચાલુ કરી પેજ ફરી ખોલો.","3D मॉडल लोड नहीं हुआ। इंटरनेट चालू करके पेज फिर खोलें।","The 3D model did not load. Check your internet connection and reload."],
+ hold:["દબાવી રાખો","दबाए रखें","Hold"],startAria:["START દબાવી રાખો","START दबाए रखें","Hold START"],
+ voice:["સમજૂતી બોલીને સંભળાવો","समझाकर बोलें","Read explanations aloud"],voiceOn:["અવાજ ચાલુ","आवाज़ चालू","Voice on"],
+ noVoice:["આ ફોન કે બ્રાઉઝરમાં ગુજરાતી અવાજ નથી. हिं કે EN પસંદ કરો, કે ફોનના Settings માં Google ગુજરાતી અવાજ ઉમેરો.","इस फ़ोन या ब्राउज़र में हिंदी आवाज़ नहीं है। EN चुनें या फ़ोन की Settings में Google हिंदी आवाज़ जोड़ें।","No English voice found on this device."],
+ gKey:["ચાવી","चाबी","Key"],gAmp:["સ્ટાર્ટર કરંટ","स्टार्टर करंट","Starter current"],gArm:["આર્મેચર","आर्मेचर","Armature"],gEng:["એન્જિન","इंजन","Engine"],
+ off:["બંધ","बंद","Off"],crank:["ક્રેન્ક","क्रैंक","cranking"],
+ fuelOn:["⛽ ફ્યુઅલ ચાલુ","⛽ फ्यूल चालू","⛽ Fuel on"],fuelOff:["⛽ ફ્યુઅલ બંધ (ફક્ત ક્રેન્ક)","⛽ फ्यूल बंद (सिर्फ क्रैंक)","⛽ Fuel off (crank only)"],
+ slow:["🐢 સ્લો મોશન","🐢 स्लो मोशन","🐢 Slow motion"],sndOn:["⚙️ મશીન અવાજ ચાલુ","⚙️ मशीन आवाज़ चालू","⚙️ Machine sound on"],sndOff:["⚙️ મશીન અવાજ બંધ","⚙️ मशीन आवाज़ बंद","⚙️ Machine sound off"],
+ vibOn:["📳 વાઇબ્રેશન ચાલુ","📳 वाइब्रेशन चालू","📳 Vibration on"],vibOff:["📳 વાઇબ્રેશન બંધ","📳 वाइब्रेशन बंद","📳 Vibration off"],stopEng:["⏹ એન્જિન બંધ","⏹ इंजन बंद","⏹ Engine off"],
+ scope:["📈 સ્ટાર્ટર કરંટ (ઓસિલોસ્કોપ, છેલ્લી 8 સેકન્ડ)","📈 स्टार्टर करंट (ऑसिलोस्कोप, पिछले 8 सेकंड)","📈 Starter current (oscilloscope, last 8 s)"],
+ lgMain:["મુખ્ય મોટો કરંટ","मुख्य बड़ा करंट","Main heavy current"],lgPull:["પુલ-ઇન કરંટ","पुल-इन करंट","Pull-in current"],lgHold:["હોલ્ડ-ઇન કરંટ","होल्ड-इन करंट","Hold-in current"],
+ lgField:["ચુંબકીય ક્ષેત્ર","चुंबकीय क्षेत्र","Magnetic field"],lgN:["N ધ્રુવ","N ध्रुव","N pole"],lgS:["S ધ્રુવ","S ध्रुव","S pole"],
+ pPlace:["મોડલમાં કોઈ પણ ભાગ પર ટેપ કરો","मॉडल में किसी भी भाग पर टैप करें","Tap any part of the model"],
+ pCount:["કુલ {n} ભાગ. નીચેની યાદીમાંથી પણ પસંદ કરી શકો.","कुल {n} भाग। नीचे की सूची से भी चुन सकते हैं।","{n} parts in all. You can also pick from the list below."],
+ bPlan:["⚙️ પ્લેનેટરી ગિયર","⚙️ प्लैनेटरी गियर","⚙️ Planetary gear"],
+ planInfo:["⚙️ પ્લેનેટરી મોડ: આર્મેચર આશરે 3.5 ગણું ઝડપી ફરે છે. 5:1 પ્લેનેટરી ગિયર ઝડપ 5 ગણી ઘટાડી ટોર્ક 5 ગણો વધારે છે. રિંગ ગિયર સ્થિર રહે, પ્લેનેટ પોતાની પિન પર ઊલટા ફરતાં સન ફરતે ચક્કર મારે, અને કેરિયર ધીમું ફરે છે.","⚙️ प्लैनेटरी मोड: आर्मेचर लगभग 3.5 गुना तेज़ घूमता है। 5:1 प्लैनेटरी गियर गति 5 गुना घटाकर टॉर्क 5 गुना बढ़ाता है। रिंग गियर स्थिर रहता है, प्लैनेट अपनी पिन पर उल्टे घूमते हुए सन के चारों ओर चक्कर लगाते हैं, और कैरियर धीमा घूमता है।","⚙️ Planetary mode: the armature spins about 3.5 times faster. The 5:1 planetary set cuts the speed by 5 and multiplies torque by 5. The ring gear stays still, the planets spin backwards on their pins while orbiting the sun, and the carrier turns slowly."],
+ whole:["આખું સ્ટાર્ટર","पूरा स्टार्टर","Whole starter"],starter:["સ્ટાર્ટર મોટર","स्टार्टर मोटर","Starter motor"],
+ pDefault:["સ્ટાર્ટર = મોટર + ડ્રાઇવ + સોલેનોઇડ. મોટર ફેરવે, ડ્રાઇવ ફ્લાયવ્હીલ સાથે જોડે, સોલેનોઇડ બંનેને હુકમ આપે.","स्टार्टर = मोटर + ड्राइव + सोलेनॉइड। मोटर घुमाती है, ड्राइव फ्लाईव्हील से जोड़ती है, सोलेनॉइड दोनों को आदेश देता है।","Starter = motor + drive + solenoid. The motor turns, the drive couples to the flywheel, and the solenoid commands both."],
+ pPrev:["◀ આગળનો ભાગ","◀ पिछला भाग","◀ Previous"],pNext:["પછીનો ભાગ ▶","अगला भाग ▶","Next ▶"],pClear:["પસંદગી હટાવો","चयन हटाएँ","Clear"],
+ pList:["બધા ભાગની યાદી","सभी भागों की सूची","All parts"],
+ pNote:["ગિયર રિડક્શન સ્ટાર્ટરમાં આર્મેચર અને પિનિયન વચ્ચે રિડક્શન ગિયર કે પ્લેનેટરી ગિયર (સન, પ્લેનેટ, રિંગ ગિયર) વધારે હોય છે. PMGR સ્ટાર્ટરમાં ફીલ્ડ કોઇલને બદલે કાયમી ચુંબક હોય છે.","गियर रिडक्शन स्टार्टर में आर्मेचर और पिनियन के बीच रिडक्शन गियर या प्लैनेटरी गियर (सन, प्लैनेट, रिंग गियर) होते हैं। PMGR स्टार्टर में फील्ड कॉइल की जगह स्थायी चुंबक होते हैं।","Gear-reduction starters add a reduction or planetary gear set (sun, planets, ring gear) between armature and pinion. PMGR starters use permanent magnets instead of field coils."],
+ dPrev:["◀ પાછું જોડો","◀ वापस जोड़ें","◀ Reassemble"],dNext:["આગળ ખોલો ▶","आगे खोलें ▶","Next step ▶"],dReset:["શરૂઆતથી","शुरू से","Start over"],
+ iHead:["ઇન્સ્પેક્શન પોઇન્ટ","इंस्पेक्शन पॉइंट","Inspection points"],iNew:["🔁 નવી જોબ (નવું સ્ટાર્ટર)","🔁 नया जॉब (नया स्टार्टर)","🔁 New job (another starter)"],
+ jobNo:["જોબ નં.","जॉब नं.","Job no."],iLook:["શું જોવું","क्या देखें","What to look for"],iFind:["તમારું તારણ પસંદ કરો","अपना निष्कर्ष चुनें","Choose your finding"],
+ iHint:["મોડલ ફેરવો અને ઝૂમ કરી ભાગ ધ્યાનથી જુઓ, પછી તારણ પસંદ કરો.","मॉडल घुमाएँ, ज़ूम करके भाग ध्यान से देखें, फिर निष्कर्ष चुनें।","Rotate and zoom to examine the part closely, then choose your finding."],
+ cFwd:["↻ ડ્રાઇવ દિશામાં ફેરવો","↻ ड्राइव दिशा में घुमाएँ","↻ Turn in drive direction"],cRev:["↺ ઊલટું ફેરવો","↺ उल्टा घुमाएँ","↺ Turn in reverse"],
+ cLock:["આર્મેચર પણ સાથે ફર્યું: લોક થયું","आर्मेचर भी साथ घूमा: लॉक हुआ","Armature turned too: locked"],cFree:["આર્મેચર સ્થિર રહ્યું: છૂટું ફર્યું","आर्मेचर स्थिर रहा: खुला घूमा","Armature stayed still: freewheeled"],
+ showGood:["✅ સારો ભાગ સાથે સરખાવો","✅ अच्छे भाग से तुलना करें","✅ Compare with a good part"],showBad:["⚠️ ખામીવાળો ભાગ ફરી બતાવો","⚠️ खराब भाग फिर दिखाएँ","⚠️ Show the defective part again"],
+ right:["સાચું!","सही!","Correct!"],wrong:["ખોટું.","गलत।","Not quite."],actual:["સાચું તારણ","सही निष्कर्ष","Actual condition"],action:["કાર્યવાહી","कार्रवाई","Action"],
+ iReport:["📋 ઇન્સ્પેક્શન રિપોર્ટ (જોબ કાર્ડ)","📋 इंस्पेक्शन रिपोर्ट (जॉब कार्ड)","📋 Inspection report (job card)"],
+ iColItem:["પોઇન્ટ","पॉइंट","Point"],iColYou:["તમારું તારણ","आपका निष्कर्ष","Your finding"],iColAct:["સાચી સ્થિતિ","सही स्थिति","Actual"],iColFix:["કાર્યવાહી","कार्रवाई","Action"],
+ iRepEmpty:["હજુ કોઈ પોઇન્ટ તપાસ્યો નથી.","अभी कोई पॉइंट नहीं जाँचा।","No points inspected yet."],
+ tHead:["ટેસ્ટ પસંદ કરો","टेस्ट चुनें","Choose a test"],tAimL:["હેતુ","उद्देश्य","Aim"],tToolL:["સાધન","उपकरण","Tools"],tSpecL:["સાચું પરિણામ","सही परिणाम","Correct result"],tStepsL:["પગલાં","चरण","Steps"],
+ sample:["નમૂનો","नमूना","Sample"],measure:["માપ લો","माप लें","Measure"],newSample:["નવો નમૂનો","नया नमूना","New sample"],pressMeasure:["\"માપ લો\" દબાવો","\"माप लें\" दबाएँ","Press \"Measure\""],
+ measuring:["માપી રહ્યા છીએ…","माप रहे हैं…","Measuring…"],howPart:["આ ભાગ કેવો છે?","यह भाग कैसा है?","Is this part good?"],good:["✅ સારો","✅ अच्छा","✅ Good"],bad:["❌ ખરાબ","❌ खराब","❌ Faulty"],
+ isGood:["આ ભાગ સારો છે.","यह भाग अच्छा है।","This part is good."],isBad:["આ ભાગ ખરાબ છે.","यह भाग खराब है।","This part is faulty."],
+ q:["પ્રશ્ન","प्रश्न","Question"],correctN:["સાચા","सही","correct"],qNext:["આગળનો પ્રશ્ન ▶","अगला प्रश्न ▶","Next question ▶"],qAgain:["ફરી શરૂ કરો ↺","फिर से शुरू करें ↺","Start again ↺"],
+ rightAns:["સાચો જવાબ","सही उत्तर","Correct answer"],
+ foot:["ITI લેબ ગુજરાતી · મિકેનિક ડીઝલ, મોટર વ્હીકલ, ઓટો ઇલેક્ટ્રિશિયન · ફ્રી શૈક્ષણિક સિમ્યુલેટર","ITI लैब गुजराती · मैकेनिक डीज़ल, मोटर व्हीकल, ऑटो इलेक्ट्रीशियन · मुफ़्त शैक्षिक सिम्युलेटर","ITI Lab Gujarati · Mechanic Diesel, Motor Vehicle, Auto Electrician · free educational simulator"]
+};
+const tr=k=>U[k]?L(U[k]):k;
+
+/* ================= PARTS ================= */
+const PD=[
+["pinion","drive","પિનિયન ગિયર","पिनियन गियर","Pinion gear","ફ્લાયવ્હીલના રિંગ ગિયર સાથે જોડાઈને એન્જિન ફેરવે. દાંતા ઘસાય કે તૂટે તો ખટખટ અવાજ આવે અને સ્ટાર્ટર ફરે પણ એન્જિન ન ફરે.","फ्लाईव्हील के रिंग गियर से जुड़कर इंजन घुमाता है। दाँते घिसे या टूटे हों तो खटखट आवाज़ आती है और स्टार्टर घूमता है पर इंजन नहीं घूमता।","Meshes with the flywheel ring gear and turns the engine. Worn or broken teeth cause clashing; the starter spins but the engine does not turn."],
+["clutch","drive","ઓવરરનિંગ ક્લચ","ओवररनिंग क्लच","Overrunning (roller) clutch","ફક્ત એક જ દિશામાં ટોર્ક આપે. એન્જિન ચાલુ થયા પછી રિંગ ગિયર પિનિયનને ખૂબ ઝડપે ફેરવે, ત્યારે ક્લચ છૂટો પડી આર્મેચરને વધુ ઝડપથી બચાવે.","केवल एक दिशा में टॉर्क देता है। इंजन चालू होने पर रिंग गियर पिनियन को बहुत तेज़ घुमाता है, तब क्लच छूटकर आर्मेचर को ज़्यादा स्पीड से बचाता है।","Transmits torque in one direction only. When the engine starts and drives the pinion faster, the clutch freewheels and protects the armature from over-speed."],
+["rollers","drive","ક્લચ રોલર","क्लच रोलर","Clutch rollers","ક્લચની અંદરના રોલર ઢાળવાળા ખાંચામાં ભરાઈને લોક કરે અને ઊલટી દિશામાં છૂટા પડે. નાની સ્પ્રિંગ તેમને ખાંચા તરફ ધકેલી રાખે.","क्लच के अंदर के रोलर ढलान वाले खाँचे में फँसकर लॉक करते हैं और उल्टी दिशा में छूट जाते हैं। छोटी स्प्रिंग उन्हें खाँचे की ओर दबाए रखती है।","Rollers wedge into tapered ramps to lock and roll free in the opposite direction. Small springs keep them pressed toward the ramps."],
+["mspring","drive","મેશિંગ સ્પ્રિંગ","मेशिंग स्प्रिंग","Meshing (drive) spring","પિનિયનનો દાંત રિંગ ગિયરના દાંત સામે અટકે (દાંત પર દાંત) ત્યારે આ સ્પ્રિંગ દબાય. આર્મેચર સહેજ ફરતાં જ તે પિનિયનને અંદર ધકેલી દે.","पिनियन का दाँत रिंग गियर के दाँत पर अटक जाए (दाँत पर दाँत) तो यह स्प्रिंग दबती है। आर्मेचर थोड़ा घूमते ही पिनियन अंदर चला जाता है।","Compresses when a pinion tooth butts against a ring-gear tooth; as soon as the armature turns slightly it pushes the pinion into mesh."],
+["sleeve","drive","હેલિકલ સ્પ્લાઇન સ્લીવ અને કોલર","हेलिकल स्प्लाइन स्लीव और कॉलर","Helical spline sleeve & drive collar","શાફ્ટની વાંકી (હેલિકલ) સ્પ્લાઇન પર સરકે, એટલે પિનિયન આગળ જતાં સહેજ ફરે અને સરળતાથી જોડાય. બે કોલર વચ્ચેના ખાંચામાં ડ્રાઇવ લીવર બેસે.","शाफ्ट की टेढ़ी (हेलिकल) स्प्लाइन पर सरकती है, जिससे पिनियन आगे जाते समय थोड़ा घूमकर आसानी से जुड़ता है। दो कॉलर के बीच की खाँच में ड्राइव लीवर बैठता है।","Slides on the shaft's helical splines so the pinion rotates slightly as it moves forward and meshes smoothly. The drive lever sits between the two collars."],
+["fork","drive","શિફ્ટ ફોર્ક / ડ્રાઇવ લીવર","शिफ्ट फोर्क / ड्राइव लीवर","Shift fork / drive lever","સોલેનોઇડનો પ્લન્જર અંદર ખેંચાય ત્યારે લીવર પિવોટ પર ફરે અને નીચેથી પિનિયનને રિંગ ગિયર તરફ ધકેલે.","सोलेनॉइड का प्लंजर अंदर खिंचता है तो लीवर पिवट पर घूमकर नीचे से पिनियन को रिंग गियर की ओर धकेलता है।","When the solenoid plunger is pulled in, the lever pivots and pushes the pinion toward the ring gear."],
+["pivot","drive","પિવોટ પિન","पिवट पिन","Pivot pin","ડ્રાઇવ લીવરનો ટેકો. ઘસાય કે ઢીલી હોય તો પિનિયન પૂરું આગળ ન જાય.","ड्राइव लीवर का आधार। घिस जाए या ढीला हो तो पिनियन पूरा आगे नहीं जाता।","Fulcrum of the drive lever. If worn or loose, the pinion does not travel fully forward."],
+["stopring","drive","સ્ટોપ રિંગ અને સર્કલિપ","स्टॉप रिंग और सर्किलप","Stop ring & circlip","પિનિયનને શાફ્ટના છેડાથી આગળ જતાં અટકાવે. ખોલતી વખતે પહેલાં સ્ટોપ રિંગ પાછળ ખસેડો, પછી સર્કલિપ કાઢો.","पिनियन को शाफ्ट के सिरे से आगे जाने से रोकती है। खोलते समय पहले स्टॉप रिंग पीछे सरकाएँ, फिर सर्किलप निकालें।","Stops the pinion at the end of the shaft. To remove, push the stop ring back first, then take out the circlip."],
+["debush","frame","ડ્રાઇવ એન્ડ બુશ","ड्राइव एंड बुश","Drive end bush","શાફ્ટના આગળના છેડાને ટેકો આપે. ઘસાય તો આર્મેચર નીચે નમે અને પોલ શૂ સાથે ઘસાય (આર્મેચર રબિંગ).","शाफ्ट के आगे के सिरे को सहारा देता है। घिस जाए तो आर्मेचर झुककर पोल शू से रगड़ता है (आर्मेचर रबिंग)।","Supports the front of the shaft. When worn, the armature drops and rubs on the pole shoes (armature rubbing)."],
+["def","frame","ડ્રાઇવ એન્ડ ફ્રેમ","ड्राइव एंड हाउसिंग","Drive end housing","એલ્યુમિનિયમનું હાઉસિંગ. આના કાનના બોલ્ટથી સ્ટાર્ટર એન્જિન કે ગિયરબોક્સ સાથે લાગે. નીચેની ખુલ્લી બારીમાંથી પિનિયન રિંગ ગિયરને મળે.","एल्युमिनियम का हाउसिंग। इसके कान के बोल्ट से स्टार्टर इंजन या गियरबॉक्स पर लगता है। नीचे की खुली खिड़की से पिनियन रिंग गियर से मिलता है।","Aluminium housing. Its mounting flange bolts the starter to the engine or gearbox; the pinion meets the ring gear through the open window."],
+["shaft","motor","આર્મેચર શાફ્ટ","आर्मेचर शाफ्ट","Armature shaft","કોર, કોમ્યુટેટર અને ડ્રાઇવ બધું આ શાફ્ટ પર. વાંક (રનઆઉટ) V-બ્લોક અને ડાયલ ગેજથી તપાસાય.","कोर, कम्यूटेटर और ड्राइव सब इसी शाफ्ट पर। टेढ़ापन (रनआउट) V-ब्लॉक और डायल गेज से जाँचा जाता है।","Carries the core, commutator and drive. Bend (run-out) is checked on V-blocks with a dial gauge."],
+["core","motor","આર્મેચર કોર","आर्मेचर कोर","Laminated armature core","પાતળી લોખંડની પતરીઓ (લેમિનેશન) જોડીને બનેલો, જેથી એડી કરંટ અને ગરમી ઘટે. ખાંચામાં તાંબાના કંડક્ટર બેસે છે.","पतली लोहे की पत्तियों (लैमिनेशन) से बना, ताकि एडी करंट और गर्मी कम हो। खाँचों में तांबे के कंडक्टर बैठते हैं।","Built from thin laminated steel sheets to cut eddy currents and heat. Copper conductors sit in its slots."],
+["winding","motor","આર્મેચર વાઇન્ડિંગ","आर्मेचर वाइंडिंग","Armature conductors","જાડી તાંબાની પટ્ટી. કરંટ વહે ત્યારે ચુંબકીય ક્ષેત્રમાં બળ લાગે અને આર્મેચર ફરે. શોર્ટ ટર્ન ગ્રાઉલર ટેસ્ટથી પકડાય.","मोटी तांबे की पट्टी। करंट बहने पर चुंबकीय क्षेत्र में बल लगता है और आर्मेचर घूमता है। शॉर्ट टर्न ग्राउलर टेस्ट से पकड़ा जाता है।","Heavy copper bars. Current in the magnetic field produces a force that turns the armature. Shorted turns are found with a growler test."],
+["comm","motor","કોમ્યુટેટર","कम्यूटेटर","Commutator","તાંબાના સેગમેન્ટનો ગોળ સમૂહ. બ્રશ મારફતે આર્મેચર કોઇલમાં કરંટની દિશા વારાફરતી બદલે, જેથી આર્મેચર એક જ દિશામાં ફરતું રહે.","तांबे के सेगमेंट का गोल समूह। ब्रश के ज़रिए आर्मेचर कॉइल में करंट की दिशा बारी-बारी बदलता है, जिससे आर्मेचर एक ही दिशा में घूमता रहे।","A ring of copper segments. Through the brushes it reverses the current in each armature coil at the right moment, so the armature keeps turning one way."],
+["mica","motor","માઇકા ઇન્સ્યુલેશન","माइका इंसुलेशन","Mica insulation","બે સેગમેન્ટ વચ્ચેનું ઇન્સ્યુલેશન. સેગમેન્ટથી સહેજ નીચે (અન્ડરકટ) રહેવું જોઈએ. ઊંચું રહે તો બ્રશ ઉછળે અને તણખા થાય.","दो सेगमेंट के बीच का इंसुलेशन। सेगमेंट से थोड़ा नीचे (अंडरकट) होना चाहिए। ऊँचा हो तो ब्रश उछलते हैं और चिंगारी होती है।","Insulation between segments. It must sit slightly below the copper (undercut); if high, the brushes bounce and spark."],
+["brush","motor","કાર્બન બ્રશ","कार्बन ब्रश","Carbon brushes","કોમ્યુટેટર સુધી કરંટ પહોંચાડે. સામાન્ય રીતે 4: 2 ઇન્સ્યુલેટેડ (+) અને 2 ગ્રાઉન્ડ (−). ઘસાય તો કરંટ ઘટે અને સ્ટાર્ટર ધીમું ફરે.","कम्यूटेटर तक करंट पहुँचाते हैं। आम तौर पर 4: 2 इंसुलेटेड (+) और 2 ग्राउंड (−)। घिस जाएँ तो करंट घटता है और स्टार्टर धीमा घूमता है।","Carry current to the commutator. Usually four: two insulated (+) and two earthed (−). Worn brushes reduce current and the starter cranks slowly."],
+["bspring","motor","બ્રશ સ્પ્રિંગ","ब्रश स्प्रिंग","Brush springs","બ્રશને કોમ્યુટેટર પર દબાવી રાખે. નબળી સ્પ્રિંગ એટલે ખરાબ સંપર્ક, તણખા અને ધીમું ક્રેન્કિંગ.","ब्रश को कम्यूटेटर पर दबाकर रखती है। कमज़ोर स्प्रिंग यानी खराब संपर्क, चिंगारी और धीमी क्रैंकिंग।","Press the brushes onto the commutator. A weak spring means poor contact, sparking and slow cranking."],
+["bholder","motor","બ્રશ હોલ્ડર","ब्रश होल्डर","Brush holders","બ્રશને સીધું અંદર-બહાર સરકવા દે. ઇન્સ્યુલેટેડ હોલ્ડર પ્લેટથી ઇન્સ્યુલેટ હોવું જ જોઈએ.","ब्रश को सीधा अंदर-बाहर सरकने देता है। इंसुलेटेड होल्डर प्लेट से इंसुलेट होना ही चाहिए।","Guide the brushes radially. Insulated holders must be insulated from the plate."],
+["bplate","motor","બ્રશ પ્લેટ","ब्रश प्लेट","Brush plate","બધા બ્રશ હોલ્ડરને પકડી રાખતી પ્લેટ. કેટલાક સ્ટાર્ટરમાં તે CE ફ્રેમ સાથે જ હોય.","सभी ब्रश होल्डर को पकड़ने वाली प्लेट। कुछ स्टार्टर में यह CE फ्रेम के साथ ही होती है।","Holds all the brush holders. On some starters it is part of the commutator end frame."],
+["yoke","motor","યોક / ફીલ્ડ ફ્રેમ","योक / फील्ड फ्रेम","Yoke / field frame","બહારનું લોખંડનું ખોખું. પોલ શૂ અને ફીલ્ડ કોઇલને પકડે અને ચુંબકીય રસ્તો પૂરો કરે.","बाहर का लोहे का खोल। पोल शू और फील्ड कॉइल को पकड़ता है और चुंबकीय रास्ता पूरा करता है।","Outer steel shell. Holds the pole shoes and field coils and completes the magnetic circuit."],
+["pole","motor","પોલ શૂ","पोल शू","Pole shoes","યોકની અંદર સ્ક્રૂથી લાગે અને ફીલ્ડનું ચુંબકીય ક્ષેત્ર આર્મેચર તરફ કેન્દ્રિત કરે. અહીં 4 પોલ શૂ છે.","योक के अंदर स्क्रू से लगे होते हैं और फील्ड का चुंबकीय क्षेत्र आर्मेचर की ओर केंद्रित करते हैं। यहाँ 4 पोल शू हैं।","Screwed inside the yoke; they concentrate the field flux onto the armature. This starter has four."],
+["field","motor","ફીલ્ડ કોઇલ","फील्ड कॉइल","Field coils","જાડી તાંબાની પટ્ટીની કોઇલ, આર્મેચર સાથે શ્રેણીમાં (DC સિરીઝ મોટર), એટલે શરૂઆતમાં ખૂબ મોટો ટોર્ક મળે.","मोटी तांबे की पट्टी की कॉइल, आर्मेचर के साथ श्रेणी में (DC सीरीज़ मोटर), इसलिए शुरुआत में बहुत ज़्यादा टॉर्क मिलता है।","Heavy copper-strip coils in series with the armature (DC series motor), giving very high starting torque."],
+["fterm","motor","ફીલ્ડ ટર્મિનલ અને ગ્રોમેટ","फील्ड टर्मिनल और ग्रोमेट","Field terminal & grommet","યોકમાંથી ફીલ્ડ કોઇલનો છેડો બહાર લાવે. રબર ગ્રોમેટ તેને યોકથી ઇન્સ્યુલેટ રાખે.","योक से फील्ड कॉइल का सिरा बाहर लाता है। रबर ग्रोमेट उसे योक से इंसुलेट रखता है।","Brings the field-coil lead out of the yoke; a rubber grommet insulates it."],
+["cef","frame","કોમ્યુટેટર એન્ડ ફ્રેમ","कम्यूटेटर एंड फ्रेम","Commutator end frame","પાછળનું ઢાંકણ. શાફ્ટનો પાછળનો બુશ અહીં હોય, અને ઘણીવાર બ્રશ પ્લેટ પણ.","पीछे का ढक्कन। शाफ्ट का पिछला बुश यहाँ होता है, और अक्सर ब्रश प्लेट भी।","Rear cover. Carries the rear shaft bush and often the brush plate."],
+["cebush","frame","CE બુશ","CE बुश","Commutator end bush","શાફ્ટનો પાછળનો છેડો ટેકે. સૂકો કે ઘસાયેલો હોય તો સ્ટાર્ટર ભારે ફરે અને વધુ કરંટ ખેંચે.","शाफ्ट का पिछला सिरा सँभालता है। सूखा या घिसा हो तो स्टार्टर भारी घूमता है और ज़्यादा करंट लेता है।","Supports the rear of the shaft. A dry or worn bush makes the starter drag and draw more current."],
+["shim","frame","થ્રસ્ટ વોશર / શિમ","थ्रस्ट वॉशर / शिम","Thrust washer / shim","આર્મેચરની આગળ-પાછળની રમત (એન્ડ પ્લે) યોગ્ય રાખે.","आर्मेचर का आगे-पीछे खेल (एंड प्ले) सही रखता है।","Sets the armature end play."],
+["bolt","frame","થ્રૂ બોલ્ટ","थ्रू बोल्ट","Through bolts","બંને એન્ડ ફ્રેમને યોક સાથે જકડે. ખોલતાં પહેલાં ફ્રેમ અને યોક પર નિશાની કરો, જેથી પાછા એ જ સ્થિતિમાં જોડાય.","दोनों एंड फ्रेम को योक से कसते हैं। खोलने से पहले फ्रेम और योक पर निशान लगाएँ ताकि वापस उसी स्थिति में जुड़ें।","Clamp both end frames to the yoke. Mark the frames and yoke before dismantling so they go back in the same position."],
+["solhouse","sol","સોલેનોઇડ હાઉસિંગ","सोलेनॉइड हाउसिंग","Solenoid body","મેગ્નેટિક સ્વિચનું ખોખું. અંદર બે વાઇન્ડિંગ, પ્લન્જર, રિટર્ન સ્પ્રિંગ અને લોખંડનો કોર.","मैग्नेटिक स्विच का खोल। अंदर दो वाइंडिंग, प्लंजर, रिटर्न स्प्रिंग और लोहे का कोर।","Body of the magnetic switch. Contains two windings, the plunger, return spring and iron core."],
+["pullin","sol","પુલ-ઇન વાઇન્ડિંગ","पुल-इन वाइंडिंग","Pull-in winding","બહારની જાડા તારની વાઇન્ડિંગ. S થી M ટર્મિનલ સુધી, એટલે મોટર મારફતે ગ્રાઉન્ડ. પ્લન્જરને જોરથી ખેંચે. કોન્ટેક્ટ બંધ થતાં બંને છેડે સરખો વોલ્ટેજ આવે એટલે બંધ પડે.","बाहर की मोटे तार की वाइंडिंग। S से M टर्मिनल तक, यानी मोटर से होकर ग्राउंड। प्लंजर को ज़ोर से खींचती है। कॉन्टैक्ट बंद होते ही दोनों सिरों पर बराबर वोल्टेज आने से बंद हो जाती है।","Outer heavy-gauge winding from S to M, earthed through the motor. Gives the strong initial pull; once the contacts close both its ends are at 12 V, so it carries no current."],
+["holdin","sol","હોલ્ડ-ઇન વાઇન્ડિંગ","होल्ड-इन वाइंडिंग","Hold-in winding","અંદરની પાતળા તારની વાઇન્ડિંગ, S થી સીધું બોડી ગ્રાઉન્ડ. ખેંચાયેલા પ્લન્જરને પકડી રાખે. ઓછો કરંટ, એટલે ઓછી ગરમી.","अंदर की पतले तार की वाइंडिंग, S से सीधा बॉडी ग्राउंड। खिंचे हुए प्लंजर को पकड़े रखती है। कम करंट, इसलिए कम गर्मी।","Inner fine-gauge winding from S straight to body earth. Holds the plunger in with low current and little heat."],
+["plunger","sol","પ્લન્જર","प्लंजर","Plunger","વાઇન્ડિંગના ચુંબકથી અંદર ખેંચાય. એક છેડે ડ્રાઇવ લીવર ખેંચે, બીજા છેડે કોન્ટેક્ટ પ્લેટને ટર્મિનલ સુધી ધકેલે.","वाइंडिंग के चुंबक से अंदर खिंचता है। एक सिरा ड्राइव लीवर खींचता है, दूसरा सिरा कॉन्टैक्ट प्लेट को टर्मिनल तक धकेलता है।","Pulled in by the winding's magnetism. One end moves the drive lever, the other pushes the contact disc onto the terminals."],
+["rspring","sol","રિટર્ન સ્પ્રિંગ","रिटर्न स्प्रिंग","Return spring","ચાવી છોડતાં પ્લન્જરને પાછો ધકેલે. પહેલાં કોન્ટેક્ટ ખૂલે, પછી પિનિયન પાછું ખેંચાય.","चाबी छोड़ते ही प्लंजर को वापस धकेलती है। पहले कॉन्टैक्ट खुलता है, फिर पिनियन पीछे आता है।","Pushes the plunger back when the key is released: the contacts open first, then the pinion withdraws."],
+["contact","sol","કોન્ટેક્ટ પ્લેટ","कॉन्टैक्ट प्लेट","Contact disc","B (30) અને M ટર્મિનલને જોડીને મોટો કરંટ મોટર સુધી પહોંચાડે. બળી જાય તો \"ટક\" અવાજ આવે પણ મોટર ન ફરે.","B (30) और M टर्मिनल को जोड़कर बड़ा करंट मोटर तक पहुँचाती है। जल जाए तो \"टक\" आवाज़ आती है पर मोटर नहीं घूमती।","Bridges terminals B (30) and M to pass the heavy current to the motor. If burnt, you hear a click but the motor does not turn."],
+["termB","sol","B / 30 ટર્મિનલ","B / 30 टर्मिनल","Battery terminal (30)","બેટરીનો જાડો + કેબલ અહીં લાગે. અહીં કાયમ બેટરી વોલ્ટેજ હોય.","बैटरी की मोटी + केबल यहाँ लगती है। यहाँ हमेशा बैटरी वोल्टेज रहता है।","The heavy battery positive cable connects here. Battery voltage is always present."],
+["termM","sol","M ટર્મિનલ","M टर्मिनल","Motor terminal","કોન્ટેક્ટ બંધ થાય ત્યારે અહીંથી કરંટ ફીલ્ડ સ્ટ્રેપ મારફતે મોટરમાં જાય.","कॉन्टैक्ट बंद होने पर यहाँ से करंट फील्ड स्ट्रैप द्वारा मोटर में जाता है।","When the contacts close, current leaves here through the field strap to the motor."],
+["termS","sol","S / 50 ટર્મિનલ","S / 50 टर्मिनल","Switch terminal (50)","ચાવી START પર હોય ત્યારે જ અહીં 12 V આવે. ઘણી ગાડીઓમાં સ્ટાર્ટર રિલે મારફતે.","चाबी START पर हो तभी यहाँ 12 V आता है। कई गाड़ियों में स्टार्टर रिले के ज़रिए।","Receives 12 V only while the key is at START, often through a starter relay."],
+["cap","sol","સોલેનોઇડ કેપ","सोलेनॉइड कैप","Solenoid cap","કોન્ટેક્ટ પ્લેટ અને ટર્મિનલ બોલ્ટને પકડતું ઇન્સ્યુલેટેડ ઢાંકણ.","कॉन्टैक्ट प्लेट और टर्मिनल बोल्ट को पकड़ने वाला इंसुलेटेड ढक्कन।","Insulated cover that carries the contact disc and terminal studs."],
+["sun","plan","સન ગિયર","सन गियर","Sun gear","આર્મેચર શાફ્ટના છેડે કાપેલું નાનું ગિયર. આર્મેચર સાથે ખૂબ ઝડપથી ફરે અને ત્રણેય પ્લેનેટ ગિયરને ફેરવે.","आर्मेचर शाफ्ट के सिरे पर कटा छोटा गियर। आर्मेचर के साथ बहुत तेज़ घूमता है और तीनों प्लैनेट गियर को घुमाता है।","Small gear cut on the end of the armature shaft. It spins at armature speed and drives the three planet gears."],
+["planet","plan","પ્લેનેટ ગિયર (3)","प्लैनेट गियर (3)","Planet gears (3)","સન ગિયર ફરતે ગોઠવાયેલાં ત્રણ નાનાં ગિયર. પોતાની પિન પર ફરે અને સાથે સન ફરતે ચક્કર પણ મારે; રિંગ ગિયરના અંદરના દાંતામાં ચાલે.","सन गियर के चारों ओर लगे तीन छोटे गियर। अपनी पिन पर घूमते हैं और साथ ही सन के चारों ओर चक्कर लगाते हैं; रिंग गियर के अंदर के दाँतों में चलते हैं।","Three small gears around the sun. Each spins on its own pin while orbiting the sun, rolling inside the ring gear's internal teeth."],
+["ringgear","plan","રિંગ ગિયર (ઇન્ટરનલ ગિયર)","रिंग गियर (इंटरनल गियर)","Ring (internal) gear","અંદરની બાજુ દાંતાવાળું મોટું રિંગ. હાઉસિંગ સાથે સ્થિર રહે છે. ઘણા સ્ટાર્ટરમાં તે પ્લાસ્ટિક કે રેઝિનનું હોય છે, જેથી અવાજ અને આંચકો ઘટે.","अंदर की ओर दाँतों वाली बड़ी रिंग। हाउसिंग के साथ स्थिर रहती है। कई स्टार्टर में यह प्लास्टिक या रेज़िन की होती है, ताकि आवाज़ और झटका कम हो।","Large ring with internal teeth, held stationary in the housing. On many starters it is moulded plastic or resin to cut noise and shock."],
+["carrier","plan","પ્લેનેટ કેરિયર અને આઉટપુટ શાફ્ટ","प्लैनेट कैरियर और आउटपुट शाफ्ट","Planet carrier & output shaft","ત્રણેય પ્લેનેટ ગિયરની પિન પકડે છે. પ્લેનેટ સન ફરતે ફરે તેમ કેરિયર ધીમું પણ મોટા ટોર્કથી ફરે, અને આઉટપુટ શાફ્ટ મારફતે ક્લચ અને પિનિયનને ફેરવે.","तीनों प्लैनेट गियर की पिन पकड़ता है। प्लैनेट सन के चारों ओर घूमते हैं तो कैरियर धीमा पर बड़े टॉर्क से घूमता है और आउटपुट शाफ्ट से क्लच और पिनियन को घुमाता है।","Holds the pins of the three planets. As the planets orbit, the carrier turns slowly with high torque and drives the clutch and pinion through the output shaft."],
+["strap","motor","ફીલ્ડ સ્ટ્રેપ","फील्ड स्ट्रैप","Field connector strap","M ટર્મિનલથી ફીલ્ડ ટર્મિનલ સુધીની તાંબાની પટ્ટી. સ્ટાર્ટર ખોલવાનું પહેલું કામ આ નટ ખોલવાનું.","M टर्मिनल से फील्ड टर्मिनल तक तांबे की पट्टी। स्टार्टर खोलने का पहला काम यही नट खोलना है।","Copper strap from terminal M to the field terminal. Removing this nut is the first step of dismantling."]
+];
+const PARTS=PD.filter(a=>a[1]!=="plan").concat(PD.filter(a=>a[1]==="plan")).map((a,i)=>({id:a[0],grp:a[1],name:[a[2],a[3],a[4]],desc:[a[5],a[6],a[7]],n:i+1}));
+const BY=Object.fromEntries(PARTS.map(p=>[p.id,p]));
+const GRP={drive:["ડ્રાઇવ મિકેનિઝમ","ड्राइव मैकेनिज़्म","Drive mechanism"],motor:["મોટર ભાગ","मोटर भाग","Motor"],sol:["સોલેનોઇડ (મેગ્નેટિક સ્વિચ)","सोलेनॉइड (मैग्नेटिक स्विच)","Solenoid (magnetic switch)"],frame:["ફ્રેમ, બુશ અને બોલ્ટ","फ्रेम, बुश और बोल्ट","Frames, bushes & bolts"],plan:["પ્લેનેટરી ગિયર સેટ (PLGR)","प्लैनेटरी गियर सेट (PLGR)","Planetary gear set (PLGR)"]};
+
+/* ================= WORKING PHASES ================= */
+const PH=[
+ {t:["તૈયાર (OFF)","तैयार (OFF)","Ready (OFF)"],
+  x:["મોડલની નીચે જમણી બાજુનું લાલ START બટન દબાવી રાખો. B (30) ટર્મિનલ પર બેટરીનો લાલ કેબલ કાયમ 12 V સાથે તૈયાર છે, પણ કોન્ટેક્ટ ખુલ્લો છે એટલે મોટરમાં કરંટ નથી.","मॉडल के नीचे दाईं ओर का लाल START बटन दबाए रखें। B (30) टर्मिनल पर बैटरी की लाल केबल हमेशा 12 V के साथ तैयार है, पर कॉन्टैक्ट खुला है इसलिए मोटर में करंट नहीं है।","Press and hold the red START button at the bottom right of the model. The red battery cable keeps 12 V on terminal B (30), but the contacts are open, so no current flows in the motor."],
+  n:["🐢 સ્લો મોશન ચાલુ કરશો તો દરેક ક્રિયા 4 ગણી ધીમી દેખાશે. કમ્પ્યુટરમાં Space કી પણ START તરીકે ચાલે છે.","🐢 स्लो मोशन चालू करेंगे तो हर क्रिया 4 गुना धीमी दिखेगी। कंप्यूटर में Space कुंजी भी START का काम करती है।","🐢 Slow motion makes every action four times slower. On a computer the Space bar also works as START."]},
+ {t:["ચુંબક બને છે","चुंबक बनता है","Magnetism builds"],
+  x:["S (50) ટર્મિનલે નાનો કરંટ આવ્યો. ભૂરા કણ પુલ-ઇન વાઇન્ડિંગના આંટામાં અને જાંબલી કણ હોલ્ડ-ઇન વાઇન્ડિંગના આંટામાં ફરે છે. તાર ફરતે ગોળ ફરતો કરંટ ચુંબકીય ક્ષેત્ર (આછી વાદળી રેખાઓ) બનાવે છે, અને સોલેનોઇડ N–S ચુંબક બને છે.","S (50) टर्मिनल पर छोटा करंट आया। नीले कण पुल-इन वाइंडिंग के फेरों में और बैंगनी कण होल्ड-इन वाइंडिंग के फेरों में घूमते हैं। तार के चारों ओर घूमता करंट चुंबकीय क्षेत्र (हल्की नीली रेखाएँ) बनाता है और सोलेनॉइड N–S चुंबक बन जाता है।","A small current reaches terminal S (50). Cyan particles circulate through the pull-in turns and violet particles through the hold-in turns. Current flowing around the turns creates a magnetic field (pale blue lines) and the solenoid becomes an N–S magnet."],
+  n:["બંને વાઇન્ડિંગનો કરંટ એક જ દિશામાં ફરે છે, એટલે બંનેનું ચુંબક ઉમેરાય અને પ્લન્જર પર સૌથી વધુ ખેંચાણ મળે.","दोनों वाइंडिंग का करंट एक ही दिशा में घूमता है, इसलिए दोनों का चुंबक जुड़ता है और प्लंजर पर सबसे ज़्यादा खिंचाव मिलता है।","Both windings carry current in the same direction, so their magnetism adds and the plunger gets the strongest pull."]},
+ {t:["પ્લન્જર ખેંચાય, પિનિયન જોડાય","प्लंजर खिंचता है, पिनियन जुड़ता है","Plunger pulls in, pinion engages"],
+  x:["ચુંબક લોખંડના પ્લન્જરને અંદર ખેંચે છે, અને રિટર્ન સ્પ્રિંગ દબાય છે. લીવર પિવોટ પર ફરી પિનિયનને રિંગ ગિયર તરફ ધકેલે છે. પુલ-ઇનનો કરંટ M ટર્મિનલ મારફતે મોટરમાં પણ જાય છે, એટલે આર્મેચર ધીમે ફરે અને દાંત સહેલાઈથી ગોઠવાય.","चुंबक लोहे के प्लंजर को अंदर खींचता है और रिटर्न स्प्रिंग दबती है। लीवर पिवट पर घूमकर पिनियन को रिंग गियर की ओर धकेलता है। पुल-इन का करंट M टर्मिनल से मोटर में भी जाता है, इसलिए आर्मेचर धीरे घूमता है और दाँत आसानी से बैठते हैं।","The magnet pulls the iron plunger in and compresses the return spring. The lever pivots and pushes the pinion toward the ring gear. Pull-in current also flows through M into the motor, so the armature turns slowly and the teeth find their place."],
+  n:["દાંત પર દાંત અટકે તો મેશિંગ સ્પ્રિંગ દબાય, અને પ્લન્જર આગળ જઈ શકે.","दाँत पर दाँत अटके तो मेशिंग स्प्रिंग दबती है और प्लंजर आगे जा सकता है।","If tooth meets tooth, the meshing spring compresses and lets the plunger complete its travel."]},
+ {t:["કોન્ટેક્ટ બંધ: મોટો કરંટ","कॉन्टैक्ट बंद: बड़ा करंट","Contacts close: heavy current"],
+  x:["કોન્ટેક્ટ પ્લેટ B અને M ને જોડે છે, એટલે \"ઠક\" અવાજ આવે. પીળા કણ મોટો કરંટ બતાવે છે: બેટરી → B → કોન્ટેક્ટ → M → ફીલ્ડ સ્ટ્રેપ → ફીલ્ડ કોઇલ → + બ્રશ → કોમ્યુટેટર → આર્મેચર → − બ્રશ → બોડી → બેટરી −. ફીલ્ડ કોઇલ પોલ શૂને N અને S ચુંબક બનાવે છે.","कॉन्टैक्ट प्लेट B और M को जोड़ती है, \"ठक\" आवाज़ आती है। पीले कण बड़ा करंट दिखाते हैं: बैटरी → B → कॉन्टैक्ट → M → फील्ड स्ट्रैप → फील्ड कॉइल → + ब्रश → कम्यूटेटर → आर्मेचर → − ब्रश → बॉडी → बैटरी −। फील्ड कॉइल पोल शू को N और S चुंबक बनाती है।","The contact disc bridges B and M with a clunk. Yellow particles show the heavy current: battery → B → contact → M → field strap → field coils → + brushes → commutator → armature → − brushes → body → battery −. The field coils turn the pole shoes into N and S poles."],
+  n:["પુલ-ઇનના બંને છેડે હવે 12 V છે, એટલે તેમાં કરંટ બંધ થયો (ભૂરા કણ અટક્યા). હવે ફક્ત હોલ્ડ-ઇન પ્લન્જરને પકડી રાખે છે.","अब पुल-इन के दोनों सिरों पर 12 V है, इसलिए उसमें करंट बंद हो गया (नीले कण रुक गए)। अब केवल होल्ड-इन प्लंजर को पकड़े रखती है।","Both ends of the pull-in winding are now at 12 V, so its current stops (cyan particles halt). Only the hold-in winding holds the plunger now."]},
+ {t:["ક્રેન્કિંગ","क्रैंकिंग","Cranking"],
+  x:["ફીલ્ડના ચુંબક અને આર્મેચરના તાંબાના કંડક્ટરમાંના કરંટ વચ્ચે બળ લાગે છે, એટલે આર્મેચર ફરે. કોમ્યુટેટર દરેક ક્ષણે કંડક્ટરમાં કરંટની દિશા બદલે છે, એટલે ફરવાનું એક જ દિશામાં ચાલુ રહે. એન્જિનના કમ્પ્રેશનથી અવાજ \"ઘર્ર-ઘર્ર\" થાય અને કરંટ ઉપર-નીચે થાય.","फील्ड के चुंबक और आर्मेचर के तांबे के कंडक्टर में बहते करंट के बीच बल लगता है, इसलिए आर्मेचर घूमता है। कम्यूटेटर हर पल कंडक्टर में करंट की दिशा बदलता है, जिससे घूमना एक ही दिशा में चलता रहे। इंजन के कम्प्रेशन से आवाज़ \"घर्र-घर्र\" होती है और करंट ऊपर-नीचे होता है।","Force acts between the field magnetism and the current in the armature's copper conductors, so the armature turns. The commutator keeps reversing the current in each conductor so rotation continues one way. Engine compression makes the 'rrr-rrr' sound and the current rises and falls (see the oscilloscope)."],
+  n:["સ્ટાર્ટર એક વારમાં 10–15 સેકન્ડથી વધુ ન ચલાવો. ⛽ ફ્યુઅલ બંધ હોય તો એન્જિન ફક્ત ક્રેન્ક થશે.","स्टार्टर एक बार में 10–15 सेकंड से ज़्यादा न चलाएँ। ⛽ फ्यूल बंद हो तो इंजन सिर्फ क्रैंक होगा।","Never crank for more than 10–15 seconds at a time. With ⛽ fuel off the engine only cranks."]},
+ {t:["એન્જિન ચાલુ: ઓવરરન","इंजन चालू: ओवररन","Engine runs: overrun"],
+  x:["એન્જિન ચાલુ થયું. હવે રિંગ ગિયર પિનિયનને આર્મેચર કરતાં ઘણી ઝડપે ફેરવે છે. ઓવરરનિંગ ક્લચના રોલર છૂટા પડે છે, એટલે એ ઝડપ આર્મેચર સુધી નથી પહોંચતી. તીણો અવાજ ઓવરરનનો છે.","इंजन चालू हो गया। अब रिंग गियर पिनियन को आर्मेचर से बहुत तेज़ घुमाता है। ओवररनिंग क्लच के रोलर छूट जाते हैं, इसलिए वह स्पीड आर्मेचर तक नहीं पहुँचती। तीखी आवाज़ ओवररन की है।","The engine has started. The ring gear now drives the pinion much faster than the armature. The overrunning-clutch rollers free off, so that speed never reaches the armature. The high-pitched whine is the overrun."],
+  n:["⚠️ હવે તરત START છોડો. લાંબો સમય ઓવરરન થાય તો ક્લચ અને બુશ બગડે.","⚠️ अब तुरंत START छोड़ें। ज़्यादा देर ओवररन से क्लच और बुश खराब होते हैं।","⚠️ Release START now. Prolonged overrun damages the clutch and bushes."]},
+ {t:["ચાવી છૂટી: ચુંબક તૂટે, રિટર્ન","चाबी छोड़ी: चुंबक टूटा, रिटर्न","Key released: field collapses, return"],
+  x:["S નો કરંટ બંધ થયો. કોન્ટેક્ટ હજુ બંધ છે એ ક્ષણે M માંથી કરંટ પુલ-ઇનમાં ઊલટી દિશામાં (ભૂરા કણ પાછા) અને હોલ્ડ-ઇનમાં સીધી દિશામાં વહે છે. બંનેનાં ચુંબક એકબીજાને રદ કરે છે, એટલે ક્ષેત્રની રેખાઓ સંકોચાઈને અદૃશ્ય થાય છે (ચુંબકત્વ તૂટે). હવે દબાયેલી રિટર્ન સ્પ્રિંગ પ્લન્જરને પાછો ધકેલે છે: પહેલાં કોન્ટેક્ટ ખૂલે, પછી લીવર પિનિયનને ફ્લાયવ્હીલથી પાછું ખેંચે.","S का करंट बंद हुआ। कॉन्टैक्ट अभी बंद है, उस पल M से करंट पुल-इन में उल्टी दिशा में (नीले कण वापस) और होल्ड-इन में सीधी दिशा में बहता है। दोनों के चुंबक एक-दूसरे को रद्द करते हैं, इसलिए क्षेत्र की रेखाएँ सिकुड़कर गायब हो जाती हैं (चुंबकत्व टूटता है)। अब दबी हुई रिटर्न स्प्रिंग प्लंजर को वापस धकेलती है: पहले कॉन्टैक्ट खुलता है, फिर लीवर पिनियन को फ्लाईव्हील से पीछे खींचता है।","S loses its supply. For the instant the contacts are still closed, current from M flows through the pull-in winding in reverse (cyan particles run back) and through the hold-in winding forward. Their magnetism cancels, so the field lines shrink and vanish (the field collapses). The compressed return spring now pushes the plunger back: the contacts open first, then the lever withdraws the pinion from the flywheel."],
+  n:["બંને વાઇન્ડિંગના આંટા સરખા હોય છે, એટલે ઊલટા કરંટે ચુંબક બરાબર શૂન્ય થાય. 🐢 સ્લો મોશનમાં આ પગલું સ્પષ્ટ દેખાશે.","दोनों वाइंडिंग के फेरे बराबर होते हैं, इसलिए उल्टे करंट से चुंबक ठीक शून्य हो जाता है। 🐢 स्लो मोशन में यह कदम साफ़ दिखेगा।","Both windings have the same number of turns, so the opposing currents cancel the magnetism exactly. 🐢 Slow motion shows this step clearly."]},
+ {t:["છૂટું પડ્યું","छूट गया","Disengaged"],
+  x:["પિનિયન ફ્લાયવ્હીલથી દૂર છે અને આર્મેચર ધીમે ધીમે અટકે છે. એન્જિન પોતાની તાકાતથી ચાલે છે.","पिनियन फ्लाईव्हील से दूर है और आर्मेचर धीरे-धीरे रुकता है। इंजन अपनी ताकत से चलता है।","The pinion is clear of the flywheel and the armature coasts to a stop. The engine runs on its own."],
+  x2:["એન્જિન ચાલુ ન થયું, ફક્ત ક્રેન્ક થયું. ⛽ ફ્યુઅલ ચાલુ રાખી START થોડી વધુ સેકન્ડ દબાવી રાખો.","इंजन चालू नहीं हुआ, सिर्फ क्रैंक हुआ। ⛽ फ्यूल चालू रखकर START कुछ सेकंड और दबाए रखें।","The engine did not start; it only cranked. Keep ⛽ fuel on and hold START a few seconds longer."],
+  n:["⏹ એન્જિન બંધ દબાવી ફરી અજમાવી શકો.","⏹ इंजन बंद दबाकर फिर से आज़माएँ।","Press ⏹ Engine off to try again."]}
+];
+
+/* ================= DISMANTLING ================= */
+const D=[
+ {m:{},g:null,t:["0. ખોલતા પહેલાં","0. खोलने से पहले","0. Before dismantling"],
+  x:["બેટરીનો નેગેટિવ ટર્મિનલ કાઢો. સ્ટાર્ટરના B અને S વાયર કાઢી, માઉન્ટિંગ બોલ્ટ ખોલી સ્ટાર્ટર ઉતારો. બહારથી સાફ કરી વાઇસમાં નરમ જડબાં (એલ્યુમિનિયમ કે લાકડું) વચ્ચે પકડો.","बैटरी का नेगेटिव टर्मिनल निकालें। स्टार्टर के B और S तार निकालकर, माउंटिंग बोल्ट खोलकर स्टार्टर उतारें। बाहर से साफ़ करके वाइस में नरम जबड़ों (एल्युमिनियम या लकड़ी) के बीच पकड़ें।","Disconnect the battery negative. Remove the B and S leads and the mounting bolts, and take the starter off. Clean the outside and hold it in a vice between soft jaws (aluminium or wood)."],
+  n:["ખોલતા પહેલાં યોક અને બંને એન્ડ ફ્રેમ પર પંચ કે માર્કરથી નિશાની કરો.","खोलने से पहले योक और दोनों एंड फ्रेम पर पंच या मार्कर से निशान लगाएँ।","Mark the yoke and both end frames with a punch or marker before you start."]},
+ {m:{strap:[2,3,3]},g:"strap",t:["1. ફીલ્ડ સ્ટ્રેપ છૂટો કરો","1. फील्ड स्ट्रैप खोलें","1. Disconnect the field strap"],
+  x:["સોલેનોઇડના M ટર્મિનલનો નટ ખોલી ફીલ્ડ સ્ટ્રેપ (તાંબાની પટ્ટી) છૂટો કરો.","सोलेनॉइड के M टर्मिनल का नट खोलकर फील्ड स्ट्रैप (तांबे की पट्टी) अलग करें।","Undo the nut on solenoid terminal M and free the copper field strap."],
+  n:["નટ ખોલતી વખતે બીજા સ્પેનરથી ટર્મિનલ બોલ્ટ પકડી રાખો, નહીં તો અંદરનો કોન્ટેક્ટ ફરી જાય.","नट खोलते समय दूसरे स्पैनर से टर्मिनल बोल्ट पकड़े रखें, वरना अंदर का कॉन्टैक्ट घूम जाता है।","Hold the terminal stud with a second spanner, or the internal contact will turn."]},
+ {m:{sol:[1,5.5,-3]},g:"solhouse",t:["2. સોલેનોઇડ કાઢો","2. सोलेनॉइड निकालें","2. Remove the solenoid"],
+  x:["સોલેનોઇડના 2–3 સ્ક્રૂ ખોલો. સોલેનોઇડ સહેજ નમાવી પ્લન્જરનો છેડો ડ્રાઇવ લીવરમાંથી છૂટો કરી બહાર કાઢો.","सोलेनॉइड के 2–3 स्क्रू खोलें। सोलेनॉइड थोड़ा झुकाकर प्लंजर का सिरा ड्राइव लीवर से अलग करके बाहर निकालें।","Remove the 2–3 solenoid screws. Tilt the solenoid to unhook the plunger from the drive lever and lift it out."],
+  n:["પ્લન્જર અને રિટર્ન સ્પ્રિંગ ખોવાય નહીં તેનું ધ્યાન રાખો.","प्लंजर और रिटर्न स्प्रिंग खो न जाएँ।","Don't lose the plunger and return spring."]},
+ {m:{bolts:[14,0,0]},g:"bolt",t:["3. થ્રૂ બોલ્ટ કાઢો","3. थ्रू बोल्ट निकालें","3. Remove the through bolts"],
+  x:["પાછળના બે લાંબા થ્રૂ બોલ્ટ ખોલીને કાઢો. આ બોલ્ટ જ આખા સ્ટાર્ટરને જકડી રાખે છે.","पीछे के दो लंबे थ्रू बोल्ट खोलकर निकालें। यही बोल्ट पूरे स्टार्टर को कसकर रखते हैं।","Unscrew and withdraw the two long through bolts at the rear. These bolts hold the whole starter together."],
+  n:["કેટલાક સ્ટાર્ટરમાં CE ફ્રેમ પર બ્રશ પ્લેટના બે નાના સ્ક્રૂ પણ હોય છે.","कुछ स्टार्टर में CE फ्रेम पर ब्रश प्लेट के दो छोटे स्क्रू भी होते हैं।","Some starters also have two small brush-plate screws in the end frame."]},
+ {m:{ce:[8,0,0]},g:"cef",t:["4. CE ફ્રેમ (પાછળનું ઢાંકણ) કાઢો","4. CE फ्रेम (पीछे का ढक्कन) निकालें","4. Remove the commutator end frame"],
+  x:["પાછળનું ઢાંકણ સીધું ખેંચીને કાઢો. અંદર CE બુશ અને થ્રસ્ટ વોશર છે.","पीछे का ढक्कन सीधा खींचकर निकालें। अंदर CE बुश और थ्रस्ट वॉशर हैं।","Pull the rear cover straight off. The CE bush and thrust washer are inside."],
+  n:["વોશર અને શિમ ક્રમમાં રાખો; તે આર્મેચરનો એન્ડ પ્લે નક્કી કરે છે.","वॉशर और शिम क्रम में रखें; ये आर्मेचर का एंड प्ले तय करते हैं।","Keep washers and shims in order; they set the armature end play."]},
+ {m:{brushes:[4.5,0,6]},g:"brush",t:["5. બ્રશ અને બ્રશ પ્લેટ કાઢો","5. ब्रश और ब्रश प्लेट निकालें","5. Remove brushes and brush plate"],
+  x:["બ્રશ સ્પ્રિંગ પાછળ ખેંચી બ્રશ હોલ્ડરમાંથી ઉપાડો. પછી બ્રશ પ્લેટ કોમ્યુટેટર પરથી કાઢો.","ब्रश स्प्रिंग पीछे खींचकर ब्रश होल्डर से निकालें। फिर ब्रश प्लेट कम्यूटेटर से उतारें।","Lift the brush springs, slide the brushes out of their holders, then remove the brush plate from the commutator."],
+  n:["બ્રશ સારા હોય તો તે કયા હોલ્ડરમાંથી નીકળ્યું તે નોંધો.","ब्रश अच्छे हों तो नोट करें कि कौन-सा ब्रश किस होल्डर से निकला।","If the brushes are re-usable, note which holder each came from."]},
+ {m:{yoke:[0,-12,0]},g:"yoke",t:["6. યોક (ફીલ્ડ ફ્રેમ) કાઢો","6. योक (फील्ड फ्रेम) निकालें","6. Remove the yoke"],
+  x:["યોકને આર્મેચર પરથી સરકાવી કાઢો. યોકની અંદર પોલ શૂ અને ફીલ્ડ કોઇલ લાગેલા રહે છે.","योक को आर्मेचर पर से सरकाकर निकालें। योक के अंदर पोल शू और फील्ड कॉइल लगे रहते हैं।","Slide the yoke off the armature. The pole shoes and field coils stay inside it."],
+  n:["યોક સરકાવતાં ફીલ્ડ કોઇલ આર્મેચર સાથે ઘસાય નહીં તેનું ધ્યાન રાખો.","योक सरकाते समय फील्ड कॉइल आर्मेचर से न रगड़ें।","Don't let the field coils scrape the armature."]},
+ {m:{de:[0,-9,-2],lever:[-4,4,0],plan:[0,5,-7]},g:"fork",np:["પ્લેનેટરી સ્ટાર્ટરમાં આર્મેચર કાઢતાં સન ગિયર તેની સાથે નીકળે છે. પછી રિંગ ગિયર, ત્રણ પ્લેનેટ અને કેરિયર એક સાથે બહાર કાઢો; ગ્રીસ અને દાંતા તપાસો.","प्लैनेटरी स्टार्टर में आर्मेचर निकालने पर सन गियर उसके साथ निकलता है। फिर रिंग गियर, तीनों प्लैनेट और कैरियर एक साथ बाहर निकालें; ग्रीस और दाँते जाँचें।","On a planetary starter the sun gear comes out with the armature. Then lift out the ring gear, three planets and carrier together; check the grease and teeth."],t:["7. આર્મેચર અને ડ્રાઇવ લીવર કાઢો","7. आर्मेचर और ड्राइव लीवर निकालें","7. Remove the armature and drive lever"],
+  x:["રબર પેકિંગ અને લીવર સાથે આર્મેચરને ડ્રાઇવ એન્ડ ફ્રેમમાંથી બહાર કાઢો. પછી લીવરને ડ્રાઇવ કોલરમાંથી છૂટો કરો.","रबर पैकिंग और लीवर के साथ आर्मेचर को ड्राइव एंड फ्रेम से बाहर निकालें। फिर लीवर को ड्राइव कॉलर से अलग करें।","Withdraw the armature with the rubber seal and lever from the drive end frame, then unhook the lever from the drive collar."],
+  n:["લીવરની દિશા યાદ રાખો; ઊંધો લાગે તો પિનિયન પૂરું આગળ નહીં જાય.","लीवर की दिशा याद रखें; उल्टा लगे तो पिनियन पूरा आगे नहीं जाएगा।","Note the lever's direction; fitted backwards, the pinion will not travel fully."]},
+ {m:{drive:[-8,0,0],outs:[-8,0,0]},g:"pinion",t:["8. પિનિયન અને ક્લચ કાઢો","8. पिनियन और क्लच निकालें","8. Remove pinion and clutch"],
+  x:["સ્ટોપ રિંગને પાઇપ કે સોકેટથી હળવેથી પાછળ ધકેલો, સર્કલિપ કાઢો, પછી સ્ટોપ રિંગ, પિનિયન અને ઓવરરનિંગ ક્લચ શાફ્ટ પરથી સરકાવી કાઢો.","स्टॉप रिंग को पाइप या सॉकेट से धीरे से पीछे धकेलें, सर्किलप निकालें, फिर स्टॉप रिंग, पिनियन और ओवररनिंग क्लच शाफ्ट से सरकाकर निकालें।","Tap the stop ring back with a tube or socket, remove the circlip, then slide the stop ring, pinion and overrunning clutch off the shaft."],
+  n:["ઓવરરનિંગ ક્લચને ક્યારેય સોલ્વન્ટ કે ડીઝલમાં ડુબાડશો નહીં; અંદરની ગ્રીસ ધોવાઈ જાય છે.","ओवररनिंग क्लच को कभी सॉल्वेंट या डीज़ल में न डुबोएँ; अंदर की ग्रीस धुल जाती है।","Never soak the overrunning clutch in solvent or diesel; it washes out the sealed-in grease."]},
+ {m:{},g:"core",t:["9. સફાઈ અને તપાસ","9. सफ़ाई और जाँच","9. Clean and inspect"],
+  x:["બધા ભાગ ક્રમમાં ગોઠવો. આર્મેચર અને ફીલ્ડ કોઇલને સૂકા કપડા કે હવાથી સાફ કરો. પછી \"ઇન્સ્પેક્શન\" અને \"ટેસ્ટિંગ\" ટેબમાં દરેક ભાગ તપાસો.","सभी भाग क्रम में रखें। आर्मेचर और फील्ड कॉइल को सूखे कपड़े या हवा से साफ़ करें। फिर \"इंस्पेक्शन\" और \"टेस्टिंग\" टैब में हर भाग जाँचें।","Lay the parts out in order. Clean the armature and field coils with a dry cloth or air. Then check every part in the Inspection and Testing tabs."],
+  n:["જોડતી વખતે આ જ પગલાં ઊલટા ક્રમમાં કરો. બુશમાં એન્જિન ઓઇલ અને સ્પ્લાઇન પર થોડી ગ્રીસ લગાવો.","जोड़ते समय यही कदम उल्टे क्रम में करें। बुश में इंजन ऑयल और स्प्लाइन पर थोड़ी ग्रीस लगाएँ।","Reassemble in reverse order. Oil the bushes and put a little grease on the splines."]}
+];
+
+/* ================= VISUAL INSPECTION ================= */
+const OKF=["બરાબર, કોઈ ખામી નથી","ठीक है, कोई खराबी नहीं","Serviceable, no defect"];
+const OKFIX=["ભાગ ફરી વાપરી શકાય. સાફ કરી જરૂર પ્રમાણે ઓઇલ કે ગ્રીસ લગાવો.","भाग दोबारा इस्तेमाल हो सकता है। साफ़ करके ज़रूरत के अनुसार ऑयल या ग्रीस लगाएँ।","Re-usable. Clean it and lubricate as required."];
+const INSP=[
+ {part:["def"],inside:false,dist:13,name:["ડ્રાઇવ એન્ડ હાઉસિંગ","ड्राइव एंड हाउसिंग","Drive end housing"],
+  look:["માઉન્ટિંગ કાન અને ફ્લેન્જ પર તિરાડ, તૂટેલો ભાગ, બોલ્ટનાં કાણાં ઘસાયેલાં છે કે નહીં.","माउंटिंग कान और फ्लैंज पर दरार, टूटा भाग, बोल्ट के छेद घिसे हैं या नहीं।","Look for cracks or breaks on the mounting ears and flange, and worn bolt holes."],
+  defects:[{d:"crack",f:["તિરાડ પડેલી છે","दरार है","Cracked"]}],distract:["ઓઇલ લીક","ऑयल लीक","Oil leak"],
+  fix:["તિરાડવાળું હાઉસિંગ બદલો. એલ્યુમિનિયમ હાઉસિંગ વેલ્ડ ન કરો; કંપનથી ફરી તૂટે. માઉન્ટિંગ બોલ્ટ ઢીલા હતા કે નહીં તે પણ તપાસો.","दरार वाला हाउसिंग बदलें। एल्युमिनियम हाउसिंग वेल्ड न करें; कंपन से फिर टूटेगा। माउंटिंग बोल्ट ढीले थे या नहीं, यह भी जाँचें।","Replace a cracked housing; don't weld aluminium, vibration cracks it again. Also check whether the mounting bolts were loose."]},
+ {part:["pinion"],inside:false,dist:9,name:["પિનિયન ગિયરના દાંતા","पिनियन गियर के दाँते","Pinion teeth"],
+  look:["દાંતાના છેડા ગોળ ઘસાયેલા, તૂટેલા કે ચીરા પડેલા છે કે નહીં. દાંતાનો આગળનો ખૂણો (ચેમ્ફર) બરાબર છે ને.","दाँतों के सिरे घिसकर गोल, टूटे या चटके तो नहीं। दाँतों का आगे का कोना (चैम्फर) ठीक है न।","Look for rounded, chipped or broken teeth and check the leading chamfer."],
+  defects:[{d:"pinionBad",f:["દાંતા ઘસાયેલા / તૂટેલા","दाँते घिसे / टूटे","Worn / broken teeth"]}],distract:["દાંતા પર કાટ","दाँतों पर जंग","Rust on teeth"],
+  fix:["પિનિયન અને ઓવરરનિંગ ક્લચ એસેમ્બલી સાથે બદલો. ફ્લાયવ્હીલ રિંગ ગિયરના દાંતા પણ જરૂર તપાસો; ઘસાયેલા હોય તો રિંગ ગિયર બદલો.","पिनियन और ओवररनिंग क्लच असेंबली साथ बदलें। फ्लाईव्हील रिंग गियर के दाँते भी ज़रूर जाँचें; घिसे हों तो रिंग गियर बदलें।","Replace the pinion and overrunning clutch as an assembly. Always inspect the flywheel ring gear too and replace it if worn."]},
+ {part:["clutch","rollers","pinion"],inside:false,dist:11,clutch:true,name:["ઓવરરનિંગ ક્લચ (હાથથી ફેરવીને)","ओवररनिंग क्लच (हाथ से घुमाकर)","Overrunning clutch (hand check)"],
+  look:["પિનિયનને બંને દિશામાં ફેરવો. એક દિશામાં લોક થવું જોઈએ (આર્મેચર સાથે ફરે), અને બીજી દિશામાં છૂટું ફરવું જોઈએ. નીચેનાં બે બટન વાપરો.","पिनियन को दोनों दिशाओं में घुमाएँ। एक दिशा में लॉक होना चाहिए (आर्मेचर साथ घूमे) और दूसरी दिशा में खुला घूमना चाहिए। नीचे के दो बटन इस्तेमाल करें।","Turn the pinion both ways. It must lock in one direction (the armature turns with it) and spin freely in the other. Use the two buttons below."],
+  defects:[{d:"slip",f:["બંને દિશામાં છૂટું ફરે (સ્લિપ)","दोनों दिशाओं में खुला घूमे (स्लिप)","Free both ways (slipping)"]},{d:"seized",f:["બંને દિશામાં લોક (જામ)","दोनों दिशाओं में लॉक (जाम)","Locked both ways (seized)"]}],
+  fix:["ક્લચ સ્લિપ થાય તો સ્ટાર્ટર ફરે પણ એન્જિન ન ફરે. જામ હોય તો એન્જિન ચાલુ થયા પછી આર્મેચર વધુ ઝડપે ફરી ઊખડે. બંનેમાં ક્લચ એસેમ્બલી બદલો; તે રિપેર થતો નથી.","क्लच स्लिप हो तो स्टार्टर घूमता है पर इंजन नहीं। जाम हो तो इंजन चालू होने के बाद आर्मेचर ज़्यादा स्पीड से घूमकर उखड़ता है। दोनों में क्लच असेंबली बदलें; इसकी मरम्मत नहीं होती।","A slipping clutch spins without turning the engine; a seized one lets the engine over-speed and throw the armature. Replace the clutch assembly in both cases; it is not repairable."]},
+ {part:["comm"],inside:true,dist:9,name:["કોમ્યુટેટરની સપાટી","कम्यूटेटर की सतह","Commutator surface"],
+  look:["સપાટી સરખી અને તાંબાના ચળકાટવાળી છે કે નહીં. કાળા બળેલા સેગમેન્ટ, ખાડા, ઊંડા કાપા કે ઊંચું માઇકા જુઓ.","सतह समान और तांबे की चमक वाली है या नहीं। काले जले सेगमेंट, गड्ढे, गहरी खरोंच या ऊँचा माइका देखें।","The surface should be smooth with a copper sheen. Look for black burnt segments, pits, deep grooves or high mica."],
+  defects:[{d:"commBurnt",f:["કાળું બળેલું અને ખાડાવાળું","काला जला और गड्ढेदार","Black, burnt and pitted"]}],distract:["ઊંચું માઇકા","ऊँचा माइका","High mica"],
+  fix:["હળવું બળેલું હોય તો લેથ પર ટર્નિંગ કરી માઇકા અન્ડરકટ કરો. ઊંડા ખાડા કે ઓછો વ્યાસ હોય તો આર્મેચર બદલો. કારણ પણ શોધો: નબળી બ્રશ સ્પ્રિંગ કે લાંબું ક્રેન્કિંગ.","हल्का जला हो तो लेथ पर टर्निंग करके माइका अंडरकट करें। गहरे गड्ढे या कम व्यास हो तो आर्मेचर बदलें। कारण भी खोजें: कमज़ोर ब्रश स्प्रिंग या लंबी क्रैंकिंग।","Light burning: skim on a lathe and undercut the mica. Deep pits or undersize: replace the armature. Find the cause too, such as weak brush springs or long cranking."]},
+ {part:["brush"],inside:true,dist:9,name:["કાર્બન બ્રશ","कार्बन ब्रश","Carbon brushes"],
+  look:["બ્રશની લંબાઈ, તિરાડ, તૂટેલો ખૂણો, તેલ કે ગ્રીસ અને લીડ (પિગટેલ) બરાબર જોડાયેલી છે કે નહીં.","ब्रश की लंबाई, दरार, टूटा कोना, तेल या ग्रीस और लीड (पिगटेल) ठीक जुड़ी है या नहीं।","Check brush length, cracks, chipped edges, oil or grease, and that the pigtail lead is secure."],
+  defects:[{d:"brushWorn",f:["બ્રશ ખૂબ ઘસાઈને ટૂંકા","ब्रश बहुत घिसकर छोटे","Worn too short"]}],distract:["બ્રશ પર તેલ","ब्रश पर तेल","Oil-soaked brushes"],
+  fix:["મર્યાદાથી ટૂંકા બ્રશ આખા સેટમાં બદલો અને નવા બ્રશને કોમ્યુટેટર પર બેસાડો (બેડિંગ). બ્રશ સ્પ્રિંગ પણ તપાસો.","सीमा से छोटे ब्रश पूरे सेट में बदलें और नए ब्रश को कम्यूटेटर पर बैठाएँ (बेडिंग)। ब्रश स्प्रिंग भी जाँचें।","Replace brushes below the limit as a complete set and bed the new ones to the commutator. Check the springs too."]},
+ {part:["bspring"],inside:true,dist:9,name:["બ્રશ સ્પ્રિંગ","ब्रश स्प्रिंग","Brush springs"],
+  look:["ચારેય સ્પ્રિંગ હાજર, સીધી અને બ્રશ પર દબાણ આપે છે કે નહીં. તૂટેલી, ગરમીથી રંગ બદલાયેલી કે ઢીલી સ્પ્રિંગ જુઓ.","चारों स्प्रिंग मौजूद, सीधी और ब्रश पर दबाव दे रही हैं या नहीं। टूटी, गर्मी से रंग बदली या ढीली स्प्रिंग देखें।","All four springs should be present, straight and pressing on the brushes. Look for broken, heat-discoloured or weak springs."],
+  defects:[{d:"springBroken",f:["એક સ્પ્રિંગ તૂટેલી / ગાયબ","एक स्प्रिंग टूटी / गायब","One spring broken / missing"]}],distract:["સ્પ્રિંગ પર કાટ","स्प्रिंग पर जंग","Rusty springs"],
+  fix:["તૂટેલી સ્પ્રિંગ બદલો; ઘણીવાર આખી બ્રશ પ્લેટ એસેમ્બલી બદલવી સરળ પડે. એ બ્રશ પાસે કોમ્યુટેટર બળ્યું છે કે નહીં તે પણ જુઓ.","टूटी स्प्रिंग बदलें; अक्सर पूरी ब्रश प्लेट असेंबली बदलना आसान होता है। उस ब्रश के पास कम्यूटेटर जला है या नहीं, यह भी देखें।","Replace the broken spring; often it is easier to replace the whole brush-plate assembly. Check the commutator near that brush for burning."]},
+ {part:["core"],inside:true,dist:13,name:["આર્મેચર કોરની સપાટી","आर्मेचर कोर की सतह","Armature core surface"],
+  look:["કોર પર ચળકતા ઘસારાના પટ્ટા (રબિંગ માર્ક), વાંકો શાફ્ટ કે ઊખડેલી વાઇન્ડિંગ જુઓ.","कोर पर चमकती रगड़ की पट्टियाँ (रबिंग मार्क), टेढ़ा शाफ्ट या उखड़ी वाइंडिंग देखें।","Look for bright rubbing marks on the core, a bent shaft or lifted windings."],
+  defects:[{d:"rubbing",f:["કોર પર ઘસારાના ચળકતા પટ્ટા","कोर पर रगड़ की चमकती पट्टियाँ","Bright rubbing marks on the core"]}],distract:["કોર પર કાટ","कोर पर जंग","Rust on the core"],
+  fix:["રબિંગનો અર્થ: બુશ ઘસાયેલા છે, શાફ્ટ વાંકો છે કે પોલ શૂ ઢીલો છે. બુશ બદલો, રનઆઉટ તપાસો અને પોલ શૂ સ્ક્રૂ કસો. કોરને નુકસાન હોય તો આર્મેચર બદલો.","रगड़ का अर्थ: बुश घिसे हैं, शाफ्ट टेढ़ा है या पोल शू ढीला है। बुश बदलें, रनआउट जाँचें और पोल शू स्क्रू कसें। कोर खराब हो तो आर्मेचर बदलें।","Rubbing means worn bushes, a bent shaft or a loose pole shoe. Replace the bushes, check run-out and tighten the pole-shoe screws. Replace the armature if the core is damaged."]},
+ {part:["field"],inside:true,dist:13,name:["ફીલ્ડ કોઇલનું ઇન્સ્યુલેશન","फील्ड कॉइल का इंसुलेशन","Field coil insulation"],
+  look:["કોઇલનો રંગ, બળેલું કે કાળું ઇન્સ્યુલેશન, બળવાની ગંધ અને ઢીલા પોલ શૂ જુઓ.","कॉइल का रंग, जला या काला इंसुलेशन, जलने की गंध और ढीले पोल शू देखें।","Look at the coil colour, burnt or blackened insulation, a burnt smell and loose pole shoes."],
+  defects:[{d:"fieldBurnt",f:["ઇન્સ્યુલેશન બળેલું / કાળું","इंसुलेशन जला / काला","Burnt / blackened insulation"]}],distract:["પોલ શૂ ઢીલો","पोल शू ढीला","Loose pole shoe"],
+  fix:["લાંબા સમય સુધી સતત ક્રેન્કિંગથી કોઇલ વધુ ગરમ થઈ છે. ફીલ્ડ કોઇલ (કે યોક એસેમ્બલી) બદલો અને ગ્રાઉન્ડ ટેસ્ટ કરો. ડ્રાઇવરને 10–15 સેકન્ડથી વધુ ક્રેન્ક ન કરવાનું સમજાવો.","लंबे समय तक लगातार क्रैंकिंग से कॉइल ज़्यादा गर्म हुई है। फील्ड कॉइल (या योक असेंबली) बदलें और ग्राउंड टेस्ट करें। ड्राइवर को 10–15 सेकंड से ज़्यादा क्रैंक न करने को समझाएँ।","The coils overheated from prolonged cranking. Replace the field coils (or yoke assembly) and do a ground test. Tell the driver not to crank for more than 10–15 seconds."]},
+ {part:["contact"],inside:true,dist:9,name:["સોલેનોઇડ કોન્ટેક્ટ પ્લેટ","सोलेनॉइड कॉन्टैक्ट प्लेट","Solenoid contact disc"],
+  look:["કોન્ટેક્ટ પ્લેટ અને ટર્મિનલના છેડા સરખા અને તાંબાના રંગના છે કે નહીં. બળેલા, ખાડાવાળા કે ઓગળેલા ભાગ જુઓ.","कॉन्टैक्ट प्लेट और टर्मिनल के सिरे समतल और तांबे के रंग के हैं या नहीं। जले, गड्ढेदार या पिघले भाग देखें।","The disc and terminal faces should be flat and copper-coloured. Look for burnt, pitted or melted areas."],
+  defects:[{d:"contactBurnt",f:["બળેલી અને ખાડાવાળી","जली और गड्ढेदार","Burnt and pitted"]}],distract:["પ્લન્જર પર કાટ","प्लंजर पर जंग","Rusty plunger"],
+  fix:["આ જ કારણે \"ટક\" આવે પણ મોટર ન ફરે. કોન્ટેક્ટ કિટ (પ્લેટ અને બંને ટર્મિનલ) કે આખો સોલેનોઇડ બદલો. કોન્ટેક્ટ ઘસીને ચલાવવું ફક્ત કામચલાઉ ઉપાય છે.","इसी कारण \"टक\" आता है पर मोटर नहीं घूमती। कॉन्टैक्ट किट (प्लेट और दोनों टर्मिनल) या पूरा सोलेनॉइड बदलें। कॉन्टैक्ट घिसकर चलाना सिर्फ अस्थायी उपाय है।","This is why it clicks but won't crank. Fit a contact kit (disc and both terminals) or a new solenoid; filing the contacts is only a temporary fix."]},
+ {part:["termB","termM"],inside:false,dist:9,name:["B અને M ટર્મિનલ","B और M टर्मिनल","B and M terminals"],
+  look:["ટર્મિનલ પર લીલો-સફેદ કાટ, ઢીલો નટ, તૂટેલું ઇન્સ્યુલેશન કે ગરમીથી રંગ બદલાયો છે કે નહીં.","टर्मिनल पर हरा-सफ़ेद जंग, ढीला नट, टूटा इंसुलेशन या गर्मी से रंग बदला है या नहीं।","Look for green-white corrosion, loose nuts, cracked insulation or heat discolouration."],
+  defects:[{d:"corrosion",f:["લીલો-સફેદ કાટ","हरा-सफ़ेद जंग","Green-white corrosion"]}],distract:["નટ ઢીલો","नट ढीला","Loose nut"],
+  fix:["કેબલ કાઢો, વાયર બ્રશ અને ખાવાના સોડાના પાણીથી સાફ કરો, સૂકવીને કસો અને ઉપર પેટ્રોલિયમ જેલી લગાવો. પછી વોલ્ટેજ ડ્રોપ ટેસ્ટ કરો.","केबल निकालें, वायर ब्रश और खाने के सोडे के पानी से साफ़ करें, सुखाकर कसें और ऊपर पेट्रोलियम जेली लगाएँ। फिर वोल्टेज ड्रॉप टेस्ट करें।","Disconnect, clean with a wire brush and baking-soda solution, dry, tighten and coat with petroleum jelly. Then do a voltage-drop test."]},
+ {part:["debush","cebush"],inside:true,dist:22,name:["બુશ (આગળ અને પાછળ)","बुश (आगे और पीछे)","Bushes (front and rear)"],
+  look:["બુશમાં શાફ્ટ હલાવી રમત (પ્લે) જુઓ. બુશ ગરમીથી ભૂરો-જાંબલી, ઘસાયેલો કે અંડાકાર તો નથી ને.","बुश में शाफ्ट हिलाकर खेल (प्ले) देखें। बुश गर्मी से नीला-बैंगनी, घिसा या अंडाकार तो नहीं।","Rock the shaft to feel for play. Check for blued (overheated), scored or oval bushes."],
+  defects:[{d:"bushWorn",f:["ગરમીથી ભૂરા અને ઘસાયેલા","गर्मी से नीले और घिसे","Blued and worn"]}],distract:["બુશમાં વધુ ગ્રીસ","बुश में ज़्यादा ग्रीस","Too much grease"],
+  fix:["બંને બુશ બદલો, પ્રેસથી બેસાડો અને એન્જિન ઓઇલ લગાવો. ઘસાયેલા બુશથી આર્મેચર ઘસાય અને સ્ટાર્ટર વધુ કરંટ ખેંચે.","दोनों बुश बदलें, प्रेस से बैठाएँ और इंजन ऑयल लगाएँ। घिसे बुश से आर्मेचर रगड़ता है और स्टार्टर ज़्यादा करंट लेता है।","Replace both bushes, press them in and oil them. Worn bushes let the armature rub and raise the current draw."]},
+ {part:["planet"],plan:true,inside:true,dist:10,name:["પ્લેનેટરી ગિયર સેટ","प्लैनेटरी गियर सेट","Planetary gear set"],
+  look:["પ્લેનેટ અને સન ગિયરના દાંતા, રિંગ ગિયરના અંદરના દાંતામાં તિરાડ, અને ગ્રીસમાં ધાતુના કણ છે કે નહીં તે જુઓ.","प्लैनेट और सन गियर के दाँते, रिंग गियर के अंदर के दाँतों में दरार, और ग्रीस में धातु के कण हैं या नहीं, देखें।","Check the planet and sun teeth, cracks in the ring gear's internal teeth, and metal particles in the grease."],
+  defects:[{d:"planetWorn",f:["એક પ્લેનેટના દાંતા તૂટેલા","एक प्लैनेट के दाँते टूटे","Broken teeth on one planet"]}],distract:["ગ્રીસ ઓછી","ग्रीस कम","Low grease"],
+  fix:["તૂટેલા દાંતાવાળો પ્લેનેટ ગિયર સેટ બદલો (સામાન્ય રીતે ત્રણેય પ્લેનેટ સાથે), રિંગ અને સન ગિયર તપાસો, જૂની ગ્રીસ સાફ કરી કંપનીની ગ્રીસ ભરો. ઘણીવાર કારણ એન્જિન ચાલુ હોય ત્યારે START દબાવવું હોય છે.","टूटे दाँतों वाला प्लैनेट गियर सेट बदलें (आम तौर पर तीनों प्लैनेट साथ), रिंग और सन गियर जाँचें, पुरानी ग्रीस साफ़ करके कंपनी की ग्रीस भरें। अक्सर कारण इंजन चालू रहते START दबाना होता है।","Replace the planet gears (usually all three), inspect the ring and sun gears, clean out the old grease and repack with the specified grease. A common cause is pressing START while the engine is running."]}
+];
+
+/* ================= TEST LAB ================= */
+const MM=["મલ્ટિમીટર (Ω)","मल्टीमीटर (Ω)","Multimeter (Ω)"],RES=["પરિણામ","परिणाम","Result"],BJ=["12 V બેટરી અને જમ્પર વાયર","12 V बैटरी और जंपर तार","12 V battery and jumper leads"],OL="O.L";
+const TESTS=[
+ {parts:["core","winding"],name:["ગ્રાઉલર ટેસ્ટ (આર્મેચર શોર્ટ)","ग्राउलर टेस्ट (आर्मेचर शॉर्ट)","Growler test (armature short)"],
+  aim:["આર્મેચર વાઇન્ડિંગના આંટા એકબીજા સાથે શોર્ટ છે કે નહીં.","आर्मेचर वाइंडिंग के फेरे आपस में शॉर्ट हैं या नहीं।","Whether any armature turns are shorted to each other."],
+  tool:["ગ્રાઉલર, હેક્સો બ્લેડ","ग्राउलर, हैक्सॉ ब्लेड","Growler, hacksaw blade"],spec:["બ્લેડ આખા કોર પર સ્થિર રહે.","ब्लेड पूरे कोर पर स्थिर रहे।","Blade stays still all round the core."],
+  steps:[["આર્મેચરને ગ્રાઉલરના V ભાગમાં મૂકી ગ્રાઉલર ચાલુ કરો.","आर्मेचर को ग्राउलर के V भाग में रखकर ग्राउलर चालू करें।","Place the armature in the growler's V and switch on."],["હેક્સો બ્લેડ કોરની ઉપર સમાંતર પકડો.","हैक्सॉ ब्लेड कोर के ऊपर समानांतर पकड़ें।","Hold a hacksaw blade parallel just above the core."],["આર્મેચરને ધીમે ધીમે આખું ફેરવો.","आर्मेचर को धीरे-धीरे पूरा घुमाएँ।","Rotate the armature slowly through a full turn."]],
+  cap:["બ્લેડનું વર્તન","ब्लेड का व्यवहार","Blade behaviour"],
+  s:[{g:1,v:["બ્લેડ સ્થિર","ब्लेड स्थिर","Blade still"]},{g:1,v:["બ્લેડ સ્થિર, કોઈ અવાજ નહીં","ब्लेड स्थिर, कोई आवाज़ नहीं","Blade still, no buzz"]},{g:0,v:["એક જગ્યાએ બ્લેડ ધ્રૂજે અને ખખડે","एक जगह ब्लेड काँपता और खड़खड़ाता है","Blade vibrates and rattles at one spot"]}],
+  ok:["બ્લેડ સ્થિર હોય તો કોઈ આંટો શોર્ટ નથી.","ब्लेड स्थिर है तो कोई फेरा शॉर्ट नहीं है।","A still blade means no shorted turns."],bad:["બ્લેડ ધ્રૂજે ત્યાં શોર્ટ થયેલો આંટો છે. આર્મેચર બદલવું પડે.","जहाँ ब्लेड काँपे वहाँ फेरा शॉर्ट है। आर्मेचर बदलना होगा।","Where the blade vibrates there is a shorted turn. Replace the armature."]},
+ {parts:["comm","shaft"],name:["આર્મેચર ગ્રાઉન્ડ ટેસ્ટ","आर्मेचर ग्राउंड टेस्ट","Armature ground test"],
+  aim:["વાઇન્ડિંગ શાફ્ટ કે કોર સાથે ગ્રાઉન્ડ (અર્થ) થઈ છે કે નહીં.","वाइंडिंग शाफ्ट या कोर से ग्राउंड (अर्थ) हुई है या नहीं।","Whether the winding is grounded to the shaft or core."],
+  tool:["મલ્ટિમીટર (Ω / કન્ટિન્યુટી) કે ઇન્સ્યુલેશન ટેસ્ટર","मल्टीमीटर (Ω / कंटिन्युटी) या इंसुलेशन टेस्टर","Multimeter (Ω / continuity) or insulation tester"],spec:["OL (અનંત), બીપ નહીં.","OL (अनंत), बीप नहीं।","OL (infinite), no beep."],
+  steps:[["એક પ્રોબ કોમ્યુટેટરના કોઈ પણ સેગમેન્ટ પર મૂકો.","एक प्रोब कम्यूटेटर के किसी भी सेगमेंट पर रखें।","Put one probe on any commutator segment."],["બીજો પ્રોબ શાફ્ટ કે કોર પર મૂકો.","दूसरा प्रोब शाफ्ट या कोर पर रखें।","Put the other probe on the shaft or core."],["રીડિંગ વાંચો.","रीडिंग पढ़ें।","Read the meter."]],
+  cap:["કોમ્યુટેટર ↔ શાફ્ટ (Ω)","कम्यूटेटर ↔ शाफ्ट (Ω)","Commutator ↔ shaft (Ω)"],
+  s:[{g:1,v:OL},{g:0,v:["0.4 Ω (બીપ)","0.4 Ω (बीप)","0.4 Ω (beep)"]},{g:0,v:"1.2 Ω"}],
+  ok:["OL એટલે ઇન્સ્યુલેશન સારું છે.","OL यानी इंसुलेशन अच्छा है।","OL means the insulation is good."],bad:["ઓછો રેઝિસ્ટન્સ એટલે વાઇન્ડિંગ બોડીને અડે છે (ગ્રાઉન્ડેડ આર્મેચર).","कम रेज़िस्टेंस यानी वाइंडिंग बॉडी से छू रही है (ग्राउंडेड आर्मेचर)।","Low resistance means the winding touches the body (grounded armature)."]},
+ {parts:["comm","mica"],name:["આર્મેચર ઓપન ટેસ્ટ","आर्मेचर ओपन टेस्ट","Armature open-circuit test"],
+  aim:["કોઈ આર્મેચર કોઇલ તૂટેલી (ઓપન) છે કે નહીં.","कोई आर्मेचर कॉइल टूटी (ओपन) है या नहीं।","Whether any armature coil is open."],
+  tool:["મલ્ટિમીટર (Ω / કન્ટિન્યુટી)","मल्टीमीटर (Ω / कंटिन्युटी)","Multimeter (Ω / continuity)"],spec:["દરેક બે પાસપાસેના સેગમેન્ટ વચ્ચે લગભગ 0 Ω.","हर दो पास-पास के सेगमेंट के बीच लगभग 0 Ω।","About 0 Ω between every pair of adjacent segments."],
+  steps:[["પ્રોબ બે પાસપાસેના સેગમેન્ટ પર મૂકો.","प्रोब दो पास-पास के सेगमेंट पर रखें।","Probe two adjacent segments."],["આખું કોમ્યુટેટર ફરતે દરેક જોડ તપાસો.","पूरे कम्यूटेटर पर हर जोड़ी जाँचें।","Work round the whole commutator pair by pair."],["બધા રીડિંગ સરખાવો.","सभी रीडिंग की तुलना करें।","Compare all readings."]],
+  cap:["સેગમેન્ટ ↔ સેગમેન્ટ (Ω)","सेगमेंट ↔ सेगमेंट (Ω)","Segment ↔ segment (Ω)"],
+  s:[{g:1,v:["0.1 Ω (બધી જોડ સરખી)","0.1 Ω (सभी जोड़ी बराबर)","0.1 Ω (all pairs equal)"]},{g:0,v:["એક જોડ: O.L","एक जोड़ी: O.L","One pair: O.L"]},{g:1,v:["0.2 Ω (બધી જોડ સરખી)","0.2 Ω (सभी जोड़ी बराबर)","0.2 Ω (all pairs equal)"]}],
+  ok:["બધી જોડમાં કન્ટિન્યુટી છે.","सभी जोड़ियों में कंटिन्युटी है।","Continuity on every pair."],bad:["એક જોડમાં OL એટલે એ કોઇલ તૂટેલી છે, ઘણીવાર રાઇઝર પાસે સોલ્ડર છૂટ્યું હોય.","एक जोड़ी में OL यानी वह कॉइल टूटी है, अक्सर राइज़र पर सोल्डर छूटा होता है।","OL on one pair means that coil is open, often a broken solder joint at the riser."]},
+ {parts:["field","fterm"],name:["ફીલ્ડ કોઇલ ઓપન ટેસ્ટ","फील्ड कॉइल ओपन टेस्ट","Field coil open test"],
+  aim:["ફીલ્ડ કોઇલ અંદરથી તૂટેલી નથી ને.","फील्ड कॉइल अंदर से टूटी तो नहीं।","Whether the field winding is broken."],tool:MM,spec:["લગભગ 0 Ω (કન્ટિન્યુટી).","लगभग 0 Ω (कंटिन्युटी)।","About 0 Ω (continuity)."],
+  steps:[["એક પ્રોબ ફીલ્ડ ટર્મિનલ પર મૂકો.","एक प्रोब फील्ड टर्मिनल पर रखें।","One probe on the field terminal."],["બીજો પ્રોબ ઇન્સ્યુલેટેડ બ્રશના લીડ પર મૂકો.","दूसरा प्रोब इंसुलेटेड ब्रश की लीड पर रखें।","Other probe on an insulated brush lead."],["રીડિંગ વાંચો.","रीडिंग पढ़ें।","Read the meter."]],
+  cap:["ફીલ્ડ ટર્મિનલ ↔ બ્રશ લીડ (Ω)","फील्ड टर्मिनल ↔ ब्रश लीड (Ω)","Field terminal ↔ brush lead (Ω)"],
+  s:[{g:1,v:"0.0 Ω"},{g:0,v:OL},{g:1,v:"0.1 Ω"}],
+  ok:["કોઇલ સળંગ છે.","कॉइल सलामत है।","The coil is continuous."],bad:["OL એટલે ફીલ્ડ કોઇલ તૂટેલી. સ્ટાર્ટર \"ટક\" કરે પણ ફરે નહીં.","OL यानी फील्ड कॉइल टूटी है। स्टार्टर \"टक\" करता है पर घूमता नहीं।","OL means an open field coil. The starter clicks but does not turn."]},
+ {parts:["field","yoke"],name:["ફીલ્ડ કોઇલ ગ્રાઉન્ડ ટેસ્ટ","फील्ड कॉइल ग्राउंड टेस्ट","Field coil ground test"],
+  aim:["ફીલ્ડ કોઇલ યોક સાથે અડે (ગ્રાઉન્ડ) છે કે નહીં.","फील्ड कॉइल योक से छू (ग्राउंड) रही है या नहीं।","Whether the field coil is grounded to the yoke."],
+  tool:["મલ્ટિમીટર કે ઇન્સ્યુલેશન ટેસ્ટર","मल्टीमीटर या इंसुलेशन टेस्टर","Multimeter or insulation tester"],spec:["OL (અનંત).","OL (अनंत)।","OL (infinite)."],
+  steps:[["એક પ્રોબ ફીલ્ડ ટર્મિનલ પર મૂકો.","एक प्रोब फील्ड टर्मिनल पर रखें।","One probe on the field terminal."],["બીજો પ્રોબ યોકની સાફ સપાટી પર મૂકો.","दूसरा प्रोब योक की साफ़ सतह पर रखें।","Other probe on clean yoke metal."],["રીડિંગ વાંચો.","रीडिंग पढ़ें।","Read the meter."]],
+  cap:["ફીલ્ડ ટર્મિનલ ↔ યોક (Ω)","फील्ड टर्मिनल ↔ योक (Ω)","Field terminal ↔ yoke (Ω)"],
+  s:[{g:1,v:OL},{g:0,v:["0.3 Ω (બીપ)","0.3 Ω (बीप)","0.3 Ω (beep)"]}],
+  ok:["કોઇલ યોકથી ઇન્સ્યુલેટેડ છે.","कॉइल योक से इंसुलेटेड है।","The coil is insulated from the yoke."],bad:["કોઇલ યોકને અડે છે; ઇન્સ્યુલેશન બળેલું છે.","कॉइल योक से छू रही है; इंसुलेशन जला हुआ है।","The coil touches the yoke; the insulation is burnt."]},
+ {parts:["brush","bspring"],name:["બ્રશ લંબાઈ","ब्रश की लंबाई","Brush length"],
+  aim:["બ્રશ કેટલું ઘસાયું છે.","ब्रश कितना घिसा है।","How far the brushes have worn."],tool:["વર્નિયર કેલિપર","वर्नियर कैलिपर","Vernier caliper"],
+  spec:["ઉદાહરણ: નવું 15.5 mm, લઘુતમ મર્યાદા 8.5 mm (સાચી મર્યાદા સર્વિસ મેન્યુઅલ મુજબ).","उदाहरण: नया 15.5 mm, न्यूनतम सीमा 8.5 mm (सही सीमा सर्विस मैनुअल अनुसार)।","Example: new 15.5 mm, service limit 8.5 mm (use the manual's figure)."],
+  steps:[["બ્રશ હોલ્ડરમાંથી કાઢો.","ब्रश होल्डर से निकालें।","Remove the brush from its holder."],["વર્નિયરથી બ્રશની લંબાઈ માપો.","वर्नियर से ब्रश की लंबाई नापें।","Measure its length with a vernier."],["મર્યાદા સાથે સરખાવો. તિરાડ કે તેલ પણ જુઓ.","सीमा से तुलना करें। दरार या तेल भी देखें।","Compare with the limit; also look for cracks or oil."]],
+  cap:["બ્રશની લંબાઈ (mm)","ब्रश की लंबाई (mm)","Brush length (mm)"],
+  s:[{g:1,v:"12.40 mm"},{g:0,v:"7.60 mm"},{g:1,v:"14.10 mm"},{g:0,v:"8.10 mm"}],
+  ok:["મર્યાદા 8.5 mm થી વધુ છે.","सीमा 8.5 mm से ज़्यादा है।","Above the 8.5 mm limit."],bad:["8.5 mm થી ઓછું છે, બ્રશ બદલો.","8.5 mm से कम है, ब्रश बदलें।","Below 8.5 mm, replace the brushes."]},
+ {parts:["bholder","bplate"],name:["બ્રશ હોલ્ડર ઇન્સ્યુલેશન","ब्रश होल्डर इंसुलेशन","Brush holder insulation"],
+  aim:["ઇન્સ્યુલેટેડ (+) હોલ્ડર પ્લેટ સાથે શોર્ટ નથી ને.","इंसुलेटेड (+) होल्डर प्लेट से शॉर्ट तो नहीं।","Whether an insulated (+) holder is shorted to the plate."],tool:MM,spec:["OL (અનંત).","OL (अनंत)।","OL (infinite)."],
+  steps:[["એક પ્રોબ ઇન્સ્યુલેટેડ હોલ્ડર પર.","एक प्रोब इंसुलेटेड होल्डर पर।","One probe on an insulated holder."],["બીજો પ્રોબ બ્રશ પ્લેટ પર.","दूसरा प्रोब ब्रश प्लेट पर।","Other probe on the brush plate."],["બંને ઇન્સ્યુલેટેડ હોલ્ડર તપાસો.","दोनों इंसुलेटेड होल्डर जाँचें।","Check both insulated holders."]],
+  cap:["+ હોલ્ડર ↔ પ્લેટ (Ω)","+ होल्डर ↔ प्लेट (Ω)","+ holder ↔ plate (Ω)"],
+  s:[{g:1,v:OL},{g:0,v:"0.2 Ω"}],
+  ok:["હોલ્ડર ઇન્સ્યુલેટેડ છે.","होल्डर इंसुलेटेड है।","The holder is insulated."],bad:["હોલ્ડર પ્લેટ સાથે શોર્ટ છે, એટલે કરંટ સીધો ગ્રાઉન્ડમાં જાય.","होल्डर प्लेट से शॉर्ट है, इसलिए करंट सीधा ग्राउंड में जाता है।","The holder is shorted to the plate, so current goes straight to earth."]},
+ {parts:["comm","mica"],name:["કોમ્યુટેટર તપાસ","कम्यूटेटर जाँच","Commutator check"],
+  aim:["કોમ્યુટેટરનો ઘસારો, રનઆઉટ અને માઇકા અન્ડરકટ.","कम्यूटेटर का घिसाव, रनआउट और माइका अंडरकट।","Commutator wear, run-out and mica undercut."],tool:["વર્નિયર, V-બ્લોક અને ડાયલ ગેજ","वर्नियर, V-ब्लॉक और डायल गेज","Vernier, V-blocks and dial gauge"],
+  spec:["ઉદાહરણ: રનઆઉટ 0.05 mm થી ઓછો, માઇકા અન્ડરકટ આશરે 0.5–0.8 mm.","उदाहरण: रनआउट 0.05 mm से कम, माइका अंडरकट लगभग 0.5–0.8 mm।","Example: run-out under 0.05 mm, mica undercut about 0.5–0.8 mm."],
+  steps:[["આર્મેચર V-બ્લોક પર મૂકો.","आर्मेचर को V-ब्लॉक पर रखें।","Set the armature on V-blocks."],["ડાયલ ગેજ કોમ્યુટેટર પર મૂકી ધીમે ફેરવો.","डायल गेज कम्यूटेटर पर रखकर धीरे घुमाएँ।","Put a dial gauge on the commutator and turn slowly."],["માઇકાની ઊંડાઈ જુઓ.","माइका की गहराई देखें।","Check the mica depth."]],
+  cap:["રનઆઉટ / અન્ડરકટ","रनआउट / अंडरकट","Run-out / undercut"],
+  s:[{g:1,v:"0.02 mm / 0.6 mm"},{g:0,v:"0.12 mm / 0.6 mm"},{g:0,v:"0.03 mm / 0.0 mm"}],
+  ok:["બંને આંકડા મર્યાદામાં.","दोनों आँकड़े सीमा में।","Both within limits."],bad:["વધુ રનઆઉટ હોય તો લેથ પર ટર્નિંગ કરો. માઇકા સરખું હોય તો અન્ડરકટ કરો.","रनआउट ज़्यादा हो तो लेथ पर टर्निंग करें। माइका बराबर हो तो अंडरकट करें।","Excess run-out: skim it on a lathe. Mica flush: undercut it."]},
+ {parts:["pullin","plunger"],name:["સોલેનોઇડ પુલ-ઇન ટેસ્ટ","सोलेनॉइड पुल-इन टेस्ट","Solenoid pull-in test"],
+  aim:["પુલ-ઇન વાઇન્ડિંગ પ્લન્જરને ખેંચી શકે છે કે નહીં.","पुल-इन वाइंडिंग प्लंजर को खींच पाती है या नहीं।","Whether the pull-in winding can pull the plunger."],tool:BJ,spec:["પિનિયન ઝટકાથી બહાર આવે.","पिनियन झटके से बाहर आए।","Pinion snaps out."],
+  steps:[["M ટર્મિનલથી ફીલ્ડ સ્ટ્રેપ છૂટો કરો.","M टर्मिनल से फील्ड स्ट्रैप खोलें।","Disconnect the field strap from M."],["બેટરી + ને S ટર્મિનલે, અને − ને M ટર્મિનલ અને સ્ટાર્ટર બોડીએ જોડો.","बैटरी + को S टर्मिनल पर, और − को M टर्मिनल व स्टार्टर बॉडी पर जोड़ें।","Battery + to S; battery − to M and to the starter body."],["પિનિયનનું વર્તન જુઓ (5 સેકન્ડથી વધુ નહીં).","पिनियन देखें (5 सेकंड से ज़्यादा नहीं)।","Watch the pinion (no longer than 5 s)."]],
+  cap:RES,s:[{g:1,v:["પિનિયન ઝટકાથી બહાર આવ્યું","पिनियन झटके से बाहर आया","Pinion snapped out"]},{g:0,v:["પિનિયન હલ્યું જ નહીં","पिनियन हिला ही नहीं","Pinion did not move"]}],
+  ok:["પુલ-ઇન બરાબર છે.","पुल-इन ठीक है।","Pull-in is good."],bad:["પુલ-ઇન વાઇન્ડિંગ ઓપન છે કે પ્લન્જર જામ છે.","पुल-इन वाइंडिंग ओपन है या प्लंजर जाम है।","Pull-in winding open or plunger seized."]},
+ {parts:["holdin","plunger"],name:["સોલેનોઇડ હોલ્ડ-ઇન ટેસ્ટ","सोलेनॉइड होल्ड-इन टेस्ट","Solenoid hold-in test"],
+  aim:["હોલ્ડ-ઇન વાઇન્ડિંગ પ્લન્જરને પકડી રાખે છે કે નહીં.","होल्ड-इन वाइंडिंग प्लंजर को पकड़े रखती है या नहीं।","Whether the hold-in winding keeps the plunger in."],tool:BJ,spec:["પિનિયન બહાર જ રહે.","पिनियन बाहर ही रहे।","Pinion stays out."],
+  steps:[["પુલ-ઇન ટેસ્ટ ચાલુ હોય ત્યારે M ટર્મિનલ પરનો − વાયર કાઢો.","पुल-इन टेस्ट चालू रहते M टर्मिनल का − तार हटाएँ।","With the pull-in test connected, remove the − lead from M."],["S અને બોડી જોડાયેલા રહે.","S और बॉडी जुड़े रहें।","Keep S and body connected."],["પિનિયનનું વર્તન જુઓ.","पिनियन देखें।","Watch the pinion."]],
+  cap:RES,s:[{g:1,v:["પિનિયન બહાર જ રહ્યું","पिनियन बाहर ही रहा","Pinion stayed out"]},{g:0,v:["પિનિયન પાછું અંદર ગયું","पिनियन वापस अंदर गया","Pinion went back in"]}],
+  ok:["હોલ્ડ-ઇન બરાબર છે.","होल्ड-इन ठीक है।","Hold-in is good."],bad:["હોલ્ડ-ઇન ઓપન છે કે ગ્રાઉન્ડ ખરાબ છે; ગાડીમાં સ્ટાર્ટર ખટખટ (ચટર) કરશે.","होल्ड-इन ओपन है या ग्राउंड खराब है; गाड़ी में स्टार्टर खटखट (चैटर) करेगा।","Hold-in open or poor earth; on the vehicle the starter will chatter."]},
+ {parts:["rspring","plunger"],name:["સોલેનોઇડ રિટર્ન ટેસ્ટ","सोलेनॉइड रिटर्न टेस्ट","Solenoid return test"],
+  aim:["ચાવી છોડતાં પિનિયન પાછું આવે છે કે નહીં.","चाबी छोड़ने पर पिनियन वापस आता है या नहीं।","Whether the pinion returns when released."],tool:BJ,spec:["પિનિયન તરત પાછું જાય.","पिनियन तुरंत वापस जाए।","Pinion returns at once."],
+  steps:[["હોલ્ડ-ઇન ટેસ્ટ ચાલુ હોય ત્યારે બોડી પરનો − વાયર કાઢો.","होल्ड-इन टेस्ट चालू रहते बॉडी का − तार हटाएँ।","With the hold-in test connected, remove the − lead from the body."],["પિનિયનનું વર્તન જુઓ.","पिनियन देखें।","Watch the pinion."]],
+  cap:RES,s:[{g:1,v:["પિનિયન તરત પાછું ગયું","पिनियन तुरंत वापस गया","Pinion returned at once"]},{g:0,v:["પિનિયન બહાર ચોંટી રહ્યું","पिनियन बाहर अटका रहा","Pinion stayed stuck out"]}],
+  ok:["રિટર્ન સ્પ્રિંગ અને પ્લન્જર બરાબર છે.","रिटर्न स्प्रिंग और प्लंजर ठीक हैं।","Return spring and plunger are good."],bad:["રિટર્ન સ્પ્રિંગ નબળી છે કે પ્લન્જર જામ છે.","रिटर्न स्प्रिंग कमज़ोर है या प्लंजर जाम है।","Weak return spring or sticking plunger."]},
+ {parts:["core","brush","cebush","debush"],name:["નો-લોડ ટેસ્ટ","नो-लोड टेस्ट","No-load test"],
+  aim:["આખું સ્ટાર્ટર ભાર વગર બરાબર ફરે છે કે નહીં.","पूरा स्टार्टर बिना भार ठीक घूमता है या नहीं।","Whether the assembled starter runs correctly off load."],
+  tool:["બેટરી, એમીટર (શંટ), વોલ્ટમીટર, ટેકોમીટર","बैटरी, एमीटर (शंट), वोल्टमीटर, टैकोमीटर","Battery, ammeter (shunt), voltmeter, tachometer"],
+  spec:["ઉદાહરણ: 11 V પર 90 A થી ઓછો કરંટ અને 3000 rpm થી વધુ (સાચા આંકડા મેન્યુઅલ મુજબ).","उदाहरण: 11 V पर 90 A से कम करंट और 3000 rpm से ज़्यादा (सही आँकड़े मैनुअल अनुसार)।","Example: under 90 A and over 3000 rpm at 11 V (use the manual's figures)."],
+  steps:[["સ્ટાર્ટરને વાઇસમાં પકડો.","स्टार्टर को वाइस में पकड़ें।","Clamp the starter in a vice."],["એમીટર શ્રેણીમાં અને વોલ્ટમીટર સમાંતર જોડો.","एमीटर श्रेणी में और वोल्टमीटर समानांतर जोड़ें।","Connect the ammeter in series and the voltmeter in parallel."],["S ને + સાથે જોડી સ્ટાર્ટર ચલાવો અને કરંટ, વોલ્ટ, rpm નોંધો.","S को + से जोड़कर स्टार्टर चलाएँ और करंट, वोल्ट, rpm नोट करें।","Bridge S to + and record current, voltage and rpm."]],
+  cap:["વોલ્ટ / કરંટ / ઝડપ","वोल्ट / करंट / गति","Volts / current / speed"],
+  s:[{g:1,v:"11.0 V / 68 A / 3600 rpm"},{g:0,v:"11.0 V / 140 A / 1800 rpm"},{g:0,v:"11.5 V / 0 A / 0 rpm"}],
+  ok:["કરંટ ઓછો અને ઝડપ વધુ, એટલે સ્ટાર્ટર બરાબર છે.","करंट कम और गति ज़्यादा, स्टार्टर ठीक है।","Low current and high speed: the starter is good."],bad:["વધુ કરંટ અને ઓછી ઝડપ = બુશ જામ, આર્મેચર ઘસાય કે શોર્ટ. શૂન્ય કરંટ = ઓપન સર્કિટ.","ज़्यादा करंट और कम गति = बुश जाम, आर्मेचर रगड़ या शॉर्ट। शून्य करंट = ओपन सर्किट।","High current, low speed = tight bushes, armature rubbing or shorted. Zero current = open circuit."]},
+ {parts:["termB","termM"],name:["ક્રેન્કિંગ વોલ્ટેજ ટેસ્ટ (ગાડીમાં)","क्रैंकिंग वोल्टेज टेस्ट (गाड़ी में)","Cranking voltage test (on vehicle)"],
+  aim:["ક્રેન્કિંગ વખતે બેટરી અને સ્ટાર્ટર બરાબર છે કે નહીં.","क्रैंकिंग के समय बैटरी और स्टार्टर ठीक हैं या नहीं।","Whether the battery and starter are healthy during cranking."],tool:["ડિજિટલ મલ્ટિમીટર","डिजिटल मल्टीमीटर","Digital multimeter"],
+  spec:["ક્રેન્કિંગ વખતે બેટરી પર 9.6 V કે વધુ.","क्रैंकिंग के समय बैटरी पर 9.6 V या ज़्यादा।","9.6 V or more at the battery while cranking."],
+  steps:[["ડીઝલ એન્જિનમાં ફ્યુઅલ કટ કરો, જેથી એન્જિન ચાલુ ન થાય.","डीज़ल इंजन में फ्यूल कट करें, ताकि इंजन चालू न हो।","Disable fuel so the engine cannot start."],["મીટર બેટરી ટર્મિનલ પર જોડો.","मीटर बैटरी टर्मिनल पर जोड़ें।","Connect the meter across the battery."],["10 સેકન્ડ ક્રેન્ક કરી સૌથી ઓછો વોલ્ટેજ જુઓ.","10 सेकंड क्रैंक करके सबसे कम वोल्टेज देखें।","Crank for 10 s and note the lowest voltage."]],
+  cap:["ક્રેન્કિંગ વખતે બેટરી વોલ્ટેજ","क्रैंकिंग के समय बैटरी वोल्टेज","Battery voltage while cranking"],
+  s:[{g:1,v:"10.4 V"},{g:0,v:"8.2 V"},{g:1,v:"10.0 V"}],
+  ok:["9.6 V થી વધુ છે.","9.6 V से ज़्यादा है।","Above 9.6 V."],bad:["9.6 V થી ઓછું: બેટરી નબળી છે કે સ્ટાર્ટર વધુ કરંટ ખેંચે છે.","9.6 V से कम: बैटरी कमज़ोर है या स्टार्टर ज़्यादा करंट ले रहा है।","Below 9.6 V: weak battery or the starter draws too much current."]},
+ {parts:["termB"],name:["વોલ્ટેજ ડ્રોપ (B+ કેબલ)","वोल्टेज ड्रॉप (B+ केबल)","Voltage drop (B+ cable)"],
+  aim:["બેટરીથી સ્ટાર્ટર સુધીનો કેબલ અને કનેક્શન બરાબર છે કે નહીં.","बैटरी से स्टार्टर तक केबल और कनेक्शन ठीक हैं या नहीं।","Whether the battery-to-starter cable and joints are good."],tool:["ડિજિટલ મલ્ટિમીટર","डिजिटल मल्टीमीटर","Digital multimeter"],
+  spec:["ક્રેન્કિંગ વખતે 0.5 V થી ઓછું.","क्रैंकिंग के समय 0.5 V से कम।","Under 0.5 V while cranking."],
+  steps:[["લાલ પ્રોબ બેટરી + પોસ્ટ પર, કાળો સ્ટાર્ટરના B (30) ટર્મિનલ પર.","लाल प्रोब बैटरी + पोस्ट पर, काला स्टार्टर के B (30) टर्मिनल पर।","Red probe on the battery + post, black on starter terminal B (30)."],["ક્રેન્ક કરતી વખતે રીડિંગ વાંચો.","क्रैंक करते समय रीडिंग पढ़ें।","Read while cranking."]],
+  cap:["બેટરી + ↔ B ટર્મિનલ (ક્રેન્કિંગ)","बैटरी + ↔ B टर्मिनल (क्रैंकिंग)","Battery + ↔ terminal B (cranking)"],
+  s:[{g:1,v:"0.3 V"},{g:0,v:"1.6 V"}],
+  ok:["કેબલ અને કનેક્શન બરાબર.","केबल और कनेक्शन ठीक।","Cable and joints are good."],bad:["વધુ ડ્રોપ: ટર્મિનલ પર કાટ, ઢીલું ક્લેમ્પ કે કેબલ અંદરથી તૂટેલો.","ज़्यादा ड्रॉप: टर्मिनल पर जंग, ढीला क्लैंप या केबल अंदर से टूटी।","High drop: corroded terminal, loose clamp or broken strands inside the cable."]}
+];
+
+/* ================= MCQ ================= */
+const GL=["3D મોડલમાં ચમકતો ભાગ કયો છે?","3D मॉडल में चमकता भाग कौन-सा है?","Which part is glowing in the 3D model?"];
+const Q=[
+ {show:["comm"],q:GL,o:[["કોમ્યુટેટર","कम्यूटेटर","Commutator"],["આર્મેચર કોર","आर्मेचर कोर","Armature core"],["પિનિયન","पिनियन","Pinion"],["પોલ શૂ","पोल शू","Pole shoe"]],a:0,e:["તાંબાના સેગમેન્ટ અને વચ્ચે માઇકા, એ કોમ્યુટેટરની ઓળખ.","तांबे के सेगमेंट और बीच में माइका, यही कम्यूटेटर की पहचान है।","Copper segments separated by mica identify the commutator."]},
+ {show:["holdin"],q:["3D મોડલમાં ચમકતી વાઇન્ડિંગનું નામ શું?","3D मॉडल में चमकती वाइंडिंग का नाम क्या है?","Name the glowing winding."],o:[["પુલ-ઇન વાઇન્ડિંગ","पुल-इन वाइंडिंग","Pull-in winding"],["હોલ્ડ-ઇન વાઇન્ડિંગ","होल्ड-इन वाइंडिंग","Hold-in winding"],["ફીલ્ડ કોઇલ","फील्ड कॉइल","Field coil"],["આર્મેચર વાઇન્ડિંગ","आर्मेचर वाइंडिंग","Armature winding"]],a:1,e:["અંદરની પાતળા તારની વાઇન્ડિંગ હોલ્ડ-ઇન છે.","अंदर की पतले तार की वाइंडिंग होल्ड-इन है।","The inner fine-wire winding is the hold-in."]},
+ {show:["fork"],q:["3D મોડલમાં ચમકતા ભાગનું કામ શું?","3D मॉडल में चमकते भाग का काम क्या है?","What does the glowing part do?"],o:[["બ્રશ દબાવવું","ब्रश दबाना","Press the brushes"],["પિનિયનને રિંગ ગિયર તરફ ધકેલવું","पिनियन को रिंग गियर की ओर धकेलना","Push the pinion toward the ring gear"],["શાફ્ટને ટેકો આપવો","शाफ्ट को सहारा देना","Support the shaft"],["કરંટ ફીલ્ડમાં મોકલવો","करंट फील्ड में भेजना","Send current to the field"]],a:1,e:["ડ્રાઇવ લીવર પ્લન્જરની હિલચાલ પિનિયન સુધી પહોંચાડે.","ड्राइव लीवर प्लंजर की गति पिनियन तक पहुँचाता है।","The drive lever transfers the plunger's movement to the pinion."]},
+ {show:["cebush"],q:["3D મોડલમાં ચમકતો ભાગ ઘસાય તો શું થાય?","3D मॉडल में चमकता भाग घिस जाए तो क्या होगा?","What happens if the glowing part wears?"],o:[["પિનિયન પાછું ન આવે","पिनियन वापस न आए","Pinion won't return"],["આર્મેચર પોલ શૂ સાથે ઘસાય અને વધુ કરંટ ખેંચે","आर्मेचर पोल शू से रगड़े और ज़्यादा करंट ले","Armature rubs the pole shoes and draws more current"],["સોલેનોઇડ ન ખેંચે","सोलेनॉइड न खींचे","Solenoid won't pull"],["કંઈ ફરક ન પડે","कोई फ़र्क नहीं","No effect"]],a:1,e:["બુશ ઘસાય તો આર્મેચર નમે અને ઘસાય (રબિંગ).","बुश घिसे तो आर्मेचर झुककर रगड़ता है।","A worn bush lets the armature drop and rub."]},
+ {f:["termS"],q:["ઇગ્નિશન ચાવીનો START વાયર સ્ટાર્ટરના કયા ટર્મિનલે આવે?","इग्निशन चाबी का START तार स्टार्टर के किस टर्मिनल पर आता है?","Which starter terminal receives the ignition START wire?"],o:["B / 30","M","S / 50",["બોડી","बॉडी","Body"]],a:2,e:["S (50) ટર્મિનલ ફક્ત START વખતે જ 12 V મેળવે.","S (50) टर्मिनल पर केवल START के समय 12 V आता है।","Terminal S (50) gets 12 V only at START."]},
+ {f:["pullin"],q:["કોન્ટેક્ટ પ્લેટ બંધ થયા પછી કઈ વાઇન્ડિંગમાં કરંટ બંધ થાય?","कॉन्टैक्ट प्लेट बंद होने के बाद किस वाइंडिंग में करंट बंद हो जाता है?","Which winding stops carrying current once the contacts close?"],o:[["હોલ્ડ-ઇન","होल्ड-इन","Hold-in"],["પુલ-ઇન","पुल-इन","Pull-in"],["ફીલ્ડ કોઇલ","फील्ड कॉइल","Field coil"],["આર્મેચર","आर्मेचर","Armature"]],a:1,e:["પુલ-ઇનના બંને છેડે 12 V આવી જાય, એટલે તેમાં કરંટ વહેતો નથી.","पुल-इन के दोनों सिरों पर 12 V आ जाता है, इसलिए करंट नहीं बहता।","Both ends of the pull-in winding reach 12 V, so no current flows."]},
+ {f:["clutch","rollers"],q:["એન્જિન ચાલુ થયા પછી આર્મેચરને વધુ ઝડપથી કોણ બચાવે?","इंजन चालू होने के बाद आर्मेचर को ज़्यादा स्पीड से कौन बचाता है?","What protects the armature from over-speed after the engine starts?"],o:[["મેશિંગ સ્પ્રિંગ","मेशिंग स्प्रिंग","Meshing spring"],["ઓવરરનિંગ ક્લચ","ओवररनिंग क्लच","Overrunning clutch"],["બ્રશ સ્પ્રિંગ","ब्रश स्प्रिंग","Brush spring"],["રિટર્ન સ્પ્રિંગ","रिटर्न स्प्रिंग","Return spring"]],a:1,e:["ઓવરરનિંગ ક્લચ એક જ દિશામાં ટોર્ક આપે અને ઊલટી રીતે છૂટો પડે.","ओवररनिंग क्लच एक ही दिशा में टॉर्क देता है और उल्टी ओर छूट जाता है।","The overrunning clutch drives one way and freewheels the other."]},
+ {f:["core","winding"],q:["ગ્રાઉલર ટેસ્ટમાં હેક્સો બ્લેડ એક જગ્યાએ ધ્રૂજે છે. અર્થ?","ग्राउलर टेस्ट में हैक्सॉ ब्लेड एक जगह काँपता है। इसका अर्थ?","In a growler test the hacksaw blade vibrates at one spot. Meaning?"],o:[["આર્મેચર બરાબર","आर्मेचर ठीक","Armature OK"],["આર્મેચર વાઇન્ડિંગ શોર્ટ","आर्मेचर वाइंडिंग शॉर्ट","Shorted armature winding"],["ફીલ્ડ કોઇલ ઓપન","फील्ड कॉइल ओपन","Open field coil"],["બ્રશ ઘસાયેલું","ब्रश घिसा","Worn brush"]],a:1,e:["ધ્રૂજતી બ્લેડ શોર્ટ થયેલા આંટા બતાવે.","काँपता ब्लेड शॉर्ट फेरे बताता है।","A vibrating blade shows shorted turns."]},
+ {f:["comm","shaft"],q:["કોમ્યુટેટર અને શાફ્ટ વચ્ચે મલ્ટિમીટર 0.4 Ω બતાવે. ખામી?","कम्यूटेटर और शाफ्ट के बीच मल्टीमीटर 0.4 Ω दिखाता है। खराबी?","The meter reads 0.4 Ω between commutator and shaft. Fault?"],o:[["ઓપન આર્મેચર","ओपन आर्मेचर","Open armature"],["ગ્રાઉન્ડેડ આર્મેચર","ग्राउंडेड आर्मेचर","Grounded armature"],["સારો આર્મેચર","अच्छा आर्मेचर","Good armature"],["બ્રશ ખરાબ","ब्रश खराब","Faulty brush"]],a:1,e:["સારા આર્મેચરમાં અહીં OL આવવું જોઈએ.","अच्छे आर्मेचर में यहाँ OL आना चाहिए।","A good armature reads OL here."]},
+ {f:["contact"],q:["ચાવી ફેરવતાં સ્ટાર્ટર \"ટક\" કરે પણ ફરે નહીં, બેટરી સારી છે. સૌથી સંભવિત કારણ?","चाबी घुमाने पर स्टार्टर \"टक\" करता है पर घूमता नहीं, बैटरी अच्छी है। सबसे संभावित कारण?","The starter clicks but does not turn; the battery is good. Most likely cause?"],o:[["કોન્ટેક્ટ પ્લેટ બળેલી","कॉन्टैक्ट प्लेट जली","Burnt contact disc"],["ઓવરરનિંગ ક્લચ સ્લિપ","ओवररनिंग क्लच स्लिप","Slipping overrunning clutch"],["રિટર્ન સ્પ્રિંગ તૂટેલી","रिटर्न स्प्रिंग टूटी","Broken return spring"],["પિનિયન નવું","पिनियन नया","New pinion"]],a:0,e:["\"ટક\" એટલે પ્લન્જર ખેંચાયો, પણ મોટો કરંટ મોટર સુધી ન ગયો.","\"टक\" यानी प्लंजर खिंचा, पर बड़ा करंट मोटर तक नहीं गया।","The click shows the plunger moved, but the heavy current never reached the motor."]},
+ {f:["field","winding"],q:["સ્ટાર્ટર મોટર કયા પ્રકારની મોટર છે?","स्टार्टर मोटर किस प्रकार की मोटर है?","What type of motor is a starter motor?"],o:[["AC ઇન્ડક્શન","AC इंडक्शन","AC induction"],["DC શન્ટ","DC शंट","DC shunt"],["DC સિરીઝ","DC सीरीज़","DC series"],["સ્ટેપર","स्टेपर","Stepper"]],a:2,e:["ફીલ્ડ અને આર્મેચર શ્રેણીમાં, એટલે શરૂઆતમાં સૌથી વધુ ટોર્ક.","फील्ड और आर्मेचर श्रेणी में, इसलिए शुरुआत में सबसे ज़्यादा टॉर्क।","Field and armature in series give maximum starting torque."]},
+ {f:["termB"],q:["ક્રેન્કિંગ વખતે બેટરી વોલ્ટેજ ઓછામાં ઓછો કેટલો રહેવો જોઈએ?","क्रैंकिंग के समय बैटरी वोल्टेज कम से कम कितना रहना चाहिए?","Minimum battery voltage while cranking?"],o:["6.0 V","9.6 V","12.6 V","14.4 V"],a:1,e:["9.6 V થી નીચે જાય તો બેટરી કે સ્ટાર્ટર તપાસો.","9.6 V से नीचे जाए तो बैटरी या स्टार्टर जाँचें।","Below 9.6 V, check the battery or starter."]},
+ {f:["pinion"],q:["પિનિયનમાં 10 અને રિંગ ગિયરમાં 120 દાંતા છે. આર્મેચર 2400 rpm પર ફરે તો એન્જિન કેટલું ફરે?","पिनियन में 10 और रिंग गियर में 120 दाँते हैं। आर्मेचर 2400 rpm पर घूमे तो इंजन कितना घूमेगा?","Pinion 10 teeth, ring gear 120 teeth. With the armature at 2400 rpm, the engine turns at:"],o:["20 rpm","200 rpm","1200 rpm","28 800 rpm"],a:1,e:["ગિયર રેશિયો = 120 ÷ 10 = 12:1. 2400 ÷ 12 = 200 rpm, અને ટોર્ક 12 ગણો.","गियर अनुपात = 120 ÷ 10 = 12:1। 2400 ÷ 12 = 200 rpm, और टॉर्क 12 गुना।","Ratio = 120 ÷ 10 = 12:1, so 2400 ÷ 12 = 200 rpm, with 12 × the torque."]},
+ {f:["winding"],q:["સ્ટાર્ટર ઝડપથી ફરવા લાગે તેમ કરંટ કેમ ઘટે છે?","स्टार्टर तेज़ घूमने लगे तो करंट क्यों घटता है?","Why does starter current fall as speed rises?"],o:[["બ્રશ ગરમ થાય","ब्रश गर्म होते हैं","The brushes heat up"],["બેક EMF વધે","बैक EMF बढ़ता है","Back EMF rises"],["બેટરી ચાર્જ થાય","बैटरी चार्ज होती है","The battery charges"],["ફીલ્ડ કોઇલ બંધ થાય","फील्ड कॉइल बंद होती है","The field coil switches off"]],a:1,e:["ફરતું આર્મેચર ઊલટો વોલ્ટેજ (બેક EMF) બનાવે છે. I = (V − Eb) ÷ R, એટલે ઝડપ વધે તેમ કરંટ ઘટે. સ્થિર હોય ત્યારે Eb = 0, એટલે કરંટ સૌથી વધુ.","घूमता आर्मेचर उल्टा वोल्टेज (बैक EMF) बनाता है। I = (V − Eb) ÷ R, इसलिए गति बढ़ने पर करंट घटता है। रुका हो तो Eb = 0, इसलिए करंट सबसे ज़्यादा।","A turning armature generates a back EMF. I = (V − Eb) ÷ R, so current falls as speed rises; at standstill Eb = 0 and current is highest."]},
+ {f:["field","winding"],q:["DC સિરીઝ મોટરમાં (સેચ્યુરેશન પહેલાં) ટોર્ક કરંટ સાથે કેવી રીતે બદલાય?","DC सीरीज़ मोटर में (सैचुरेशन से पहले) टॉर्क करंट के साथ कैसे बदलता है?","In a DC series motor (below saturation), torque varies with current as:"],o:["T ∝ I","T ∝ I²","T ∝ 1/I","T ∝ √I"],a:1,e:["સિરીઝ મોટરમાં ફ્લક્સ Φ ∝ I અને T ∝ Φ × I, એટલે T ∝ I². તેથી શરૂઆતના મોટા કરંટે ખૂબ મોટો ટોર્ક મળે.","सीरीज़ मोटर में फ्लक्स Φ ∝ I और T ∝ Φ × I, इसलिए T ∝ I²। शुरुआती बड़े करंट पर बहुत बड़ा टॉर्क मिलता है।","In a series motor Φ ∝ I and T ∝ Φ × I, so T ∝ I². The high starting current gives very high torque."]},
+ {show:["planet"],plan:true,q:["3D મોડલમાં ચમકતાં ત્રણ ગિયરને શું કહે?","3D मॉडल में चमकते तीन गियर को क्या कहते हैं?","What are the three glowing gears called?"],o:[["સન ગિયર","सन गियर","Sun gear"],["પ્લેનેટ ગિયર","प्लैनेट गियर","Planet gears"],["રિંગ ગિયર","रिंग गियर","Ring gear"],["પિનિયન","पिनियन","Pinion"]],a:1,e:["પ્લેનેટ ગિયર સન ફરતે ફરે અને રિંગ ગિયરના અંદરના દાંતામાં ચાલે.","प्लैनेट गियर सन के चारों ओर घूमते हैं और रिंग गियर के अंदर के दाँतों में चलते हैं।","Planet gears orbit the sun and roll inside the ring gear."]},
+ {show:["ringgear"],plan:true,q:["ચાલુ સ્ટાર્ટરમાં ચમકતો ભાગ શું કરે છે?","चालू स्टार्टर में चमकता भाग क्या करता है?","In a running starter, what does the glowing part do?"],o:[["સ્થિર રહે છે","स्थिर रहता है","Stays stationary"],["સન સાથે ફરે","सन के साथ घूमता है","Turns with the sun"],["કેરિયર સાથે ફરે","कैरियर के साथ घूमता है","Turns with the carrier"],["ઊલટું ફરે","उल्टा घूमता है","Turns backwards"]],a:0,e:["રિંગ ગિયર હાઉસિંગ સાથે સ્થિર રહે છે; એટલે જ ઝડપ ઘટે અને ટોર્ક વધે.","रिंग गियर हाउसिंग के साथ स्थिर रहता है; इसी से गति घटती है और टॉर्क बढ़ता है।","The ring gear is held in the housing; that is what produces the reduction."]},
+ {f:["sun","carrier"],plan:true,q:["સન 10 અને રિંગ 40 દાંતા, રિંગ સ્થિર. આર્મેચર 5000 rpm હોય તો કેરિયર કેટલું ફરે?","सन 10 और रिंग 40 दाँते, रिंग स्थिर। आर्मेचर 5000 rpm हो तो कैरियर कितना घूमेगा?","Sun 10 teeth, ring 40 teeth, ring held. With the armature at 5000 rpm, the carrier turns at:"],o:["500 rpm","1000 rpm","1250 rpm","4000 rpm"],a:1,e:["રેશિયો = (40 + 10) ÷ 10 = 5:1. 5000 ÷ 5 = 1000 rpm.","अनुपात = (40 + 10) ÷ 10 = 5:1। 5000 ÷ 5 = 1000 rpm।","Ratio = (40 + 10) ÷ 10 = 5:1, so 5000 ÷ 5 = 1000 rpm."]}
+];
+
+/* ================= THEORY ================= */
+const TH={
+ cTitle:["સ્ટાર્ટિંગ સર્કિટ","स्टार्टिंग सर्किट","Starting circuit"],
+ cTxt:["સ્ટાર્ટિંગ સિસ્ટમમાં બે સર્કિટ છે. કંટ્રોલ સર્કિટ ચાવી, સેફ્ટી સ્વિચ અને સોલેનોઇડ વાઇન્ડિંગમાંથી થોડા એમ્પિયર જ લે છે. મુખ્ય સર્કિટ જાડા કેબલ, સોલેનોઇડ કોન્ટેક્ટ અને મોટરમાંથી 150–300 A લે છે. ન્યુટ્રલ / ક્લચ સેફ્ટી સ્વિચ ગિયર લાગેલો હોય ત્યારે ગાડી સ્ટાર્ટ થતી અટકાવે છે.","स्टार्टिंग सिस्टम में दो सर्किट होते हैं। कंट्रोल सर्किट चाबी, सेफ्टी स्विच और सोलेनॉइड वाइंडिंग से केवल कुछ एम्पियर लेता है। मुख्य सर्किट मोटी केबल, सोलेनॉइड कॉन्टैक्ट और मोटर से 150–300 A लेता है। न्यूट्रल / क्लच सेफ्टी स्विच गियर में होने पर गाड़ी स्टार्ट होने से रोकता है।","A starting system has two circuits. The control circuit (key, safety switch, solenoid windings) carries only a few amperes. The main circuit (heavy cables, solenoid contacts, motor) carries 150–300 A. The neutral / clutch safety switch prevents starting in gear."],
+ bat:["બેટરી","बैटरी","Battery"],ign:["ઇગ્નિશન સ્વિચ (START)","इग्निशन स्विच (START)","Ignition switch (START)"],nss:["સેફ્ટી સ્વિચ","सेफ्टी स्विच","Safety switch"],sol:["સોલેનોઇડ","सोलेनॉइड","Solenoid"],mot:["મોટર","मोटर","Motor"],
+ main:["મુખ્ય સર્કિટ (મોટો કરંટ)","मुख्य सर्किट (बड़ा करंट)","Main circuit (heavy current)"],ctrl:["કંટ્રોલ સર્કિટ (નાનો કરંટ)","कंट्रोल सर्किट (छोटा करंट)","Control circuit (small current)"],
+ mTitle:["DC સિરીઝ મોટરનો સિદ્ધાંત","DC सीरीज़ मोटर का सिद्धांत","DC series motor principle"],
+ mTxt:["ફીલ્ડ અને આર્મેચર શ્રેણીમાં હોવાથી એ જ કરંટ બંનેમાંથી જાય છે. ચુંબકીય ક્ષેત્રમાં રહેલા કરંટવાળા કંડક્ટર પર બળ લાગે છે (ફ્લેમિંગનો ડાબા હાથનો નિયમ), અને એ બળ આર્મેચરને ફેરવે છે. ફરતું આર્મેચર બેક EMF (Eb) બનાવે છે, જે બેટરી વોલ્ટેજની વિરુદ્ધ હોય છે. સ્થિર હોય ત્યારે Eb = 0, એટલે કરંટ અને ટોર્ક બંને સૌથી વધુ. એન્જિન ફરવા લાગે તેમ Eb વધે અને કરંટ ઘટે.","फील्ड और आर्मेचर श्रेणी में होने से वही करंट दोनों से बहता है। चुंबकीय क्षेत्र में रखे करंट वाले कंडक्टर पर बल लगता है (फ्लेमिंग का बाएँ हाथ का नियम), और वह बल आर्मेचर को घुमाता है। घूमता आर्मेचर बैक EMF (Eb) बनाता है, जो बैटरी वोल्टेज के विपरीत होता है। रुका हो तो Eb = 0, इसलिए करंट और टॉर्क दोनों सबसे ज़्यादा। इंजन घूमने लगे तो Eb बढ़ता है और करंट घटता है।","Field and armature are in series, so the same current flows through both. A current-carrying conductor in a magnetic field feels a force (Fleming's left-hand rule), and that force turns the armature. The turning armature generates a back EMF (Eb) opposing the battery. At standstill Eb = 0, so current and torque are at their maximum; as the engine speeds up, Eb rises and current falls."],
+ ex:["ઉદાહરણ: V = 12 V, કુલ રેઝિસ્ટન્સ (આર્મેચર + ફીલ્ડ + બ્રશ + કેબલ + બેટરી) ≈ 0.04 Ω. સ્થિર સ્થિતિમાં I = 12 ÷ 0.04 = 300 A. ક્રેન્કિંગ વખતે Eb ≈ 6 V થાય તો I = (12 − 6) ÷ 0.04 = 150 A. (આંકડા સમજવા માટેના અંદાજિત છે.)","उदाहरण: V = 12 V, कुल रेज़िस्टेंस (आर्मेचर + फील्ड + ब्रश + केबल + बैटरी) ≈ 0.04 Ω। रुकी स्थिति में I = 12 ÷ 0.04 = 300 A। क्रैंकिंग के समय Eb ≈ 6 V हो तो I = (12 − 6) ÷ 0.04 = 150 A। (आँकड़े समझाने के लिए अनुमानित हैं।)","Example: V = 12 V, total resistance (armature + field + brushes + cables + battery) ≈ 0.04 Ω. At standstill I = 12 ÷ 0.04 = 300 A. While cranking, if Eb ≈ 6 V then I = (12 − 6) ÷ 0.04 = 150 A. (Illustrative figures.)"],
+ warn:["સિરીઝ મોટરને ભાર વગર લાંબો સમય ન ચલાવો: કરંટ ઘટતાં ફ્લક્સ ઘટે અને ઝડપ ખૂબ વધી જાય.","सीरीज़ मोटर को बिना भार देर तक न चलाएँ: करंट घटने से फ्लक्स घटता है और गति बहुत बढ़ जाती है।","Never run a series motor off load for long: as current falls the flux falls and the speed runs away."],
+ gTitle:["લાક્ષણિક વળાંક (અંદાજિત)","विशेषता वक्र (अनुमानित)","Characteristic curves (illustrative)"],
+ gTxt:["કરંટ વધે તેમ ટોર્ક ઝડપથી વધે અને ઝડપ ઘટે. પાવર વચ્ચેના કરંટે સૌથી વધુ હોય. તેથી સ્ટાર્ટર ઓછી ઝડપે મોટો ટોર્ક આપે છે, જે એન્જિનનું કમ્પ્રેશન તોડવા માટે જ જોઈએ.","करंट बढ़ने पर टॉर्क तेज़ी से बढ़ता है और गति घटती है। पावर बीच के करंट पर सबसे ज़्यादा होती है। इसलिए स्टार्टर कम गति पर बड़ा टॉर्क देता है, जो इंजन का कम्प्रेशन तोड़ने के लिए ज़रूरी है।","As current rises, torque climbs steeply and speed falls. Power peaks at a middle current. That is why a starter gives high torque at low speed, exactly what is needed to overcome engine compression."],
+ speed:["ઝડપ","गति","Speed"],torque:["ટોર્ક","टॉर्क","Torque"],power:["પાવર","पावर","Power"],axis:["કરંટ (A)","करंट (A)","Current (A)"],
+ plTitle:["પ્લેનેટરી ગિયર રિડક્શન (PLGR)","प्लैनेटरी गियर रिडक्शन (PLGR)","Planetary gear reduction (PLGR)"],
+ plTxt:["આર્મેચર શાફ્ટ પરનું સન ગિયર ત્રણ પ્લેનેટ ગિયરને ફેરવે છે. પ્લેનેટ ગિયર સ્થિર રિંગ ગિયરના અંદરના દાંતામાં ચાલે છે, એટલે તેઓ સન ફરતે ચક્કર મારે અને કેરિયરને ધીમે ધીમે ફેરવે. ભાર ત્રણ પ્લેનેટમાં વહેંચાઈ જાય છે, એટલે નાનું ગિયર સેટ પણ મોટો ટોર્ક સહન કરે. તેથી નાની, હલકી અને ઝડપી મોટર પૂરતો ક્રેન્કિંગ ટોર્ક આપે છે અને બેટરીમાંથી ઓછો કરંટ લે છે.","आर्मेचर शाफ्ट पर लगा सन गियर तीन प्लैनेट गियर को घुमाता है। प्लैनेट गियर स्थिर रिंग गियर के अंदर के दाँतों में चलते हैं, इसलिए वे सन के चारों ओर चक्कर लगाते हैं और कैरियर को धीरे-धीरे घुमाते हैं। भार तीन प्लैनेट में बँट जाता है, इसलिए छोटा गियर सेट भी बड़ा टॉर्क सह लेता है। इसलिए छोटी, हल्की और तेज़ मोटर पर्याप्त क्रैंकिंग टॉर्क देती है और बैटरी से कम करंट लेती है।","The sun gear on the armature shaft drives three planet gears. The planets roll inside the stationary ring gear, so they orbit the sun and turn the carrier slowly. The load is shared by three planets, so a compact set carries high torque. A small, light, fast motor therefore gives enough cranking torque while drawing less current."],
+ plEx:["ઉદાહરણ: સન 10, રિંગ 40, પ્લેનેટ 15 દાંતા (રિંગ સ્થિર). રેશિયો = (40 + 10) ÷ 10 = 5:1. આર્મેચર 5000 rpm → કેરિયર 1000 rpm. પછી પિનિયન 10 અને ફ્લાયવ્હીલ 96 દાંતા → એન્જિન 1000 ÷ 9.6 ≈ 104 rpm. કુલ રેશિયો 5 × 9.6 = 48:1.","उदाहरण: सन 10, रिंग 40, प्लैनेट 15 दाँते (रिंग स्थिर)। अनुपात = (40 + 10) ÷ 10 = 5:1। आर्मेचर 5000 rpm → कैरियर 1000 rpm। फिर पिनियन 10 और फ्लाईव्हील 96 दाँते → इंजन 1000 ÷ 9.6 ≈ 104 rpm। कुल अनुपात 5 × 9.6 = 48:1।","Example: sun 10, ring 40, planets 15 teeth (ring held). Ratio = (40 + 10) ÷ 10 = 5:1. Armature 5000 rpm → carrier 1000 rpm. Then pinion 10 and flywheel 96 teeth → engine 1000 ÷ 9.6 ≈ 104 rpm. Overall ratio 5 × 9.6 = 48:1."],
+ rTitle:["ગિયર રેશિયો: ગણતરી","गियर अनुपात: गणना","Gear ratio: worked example"],
+ rTxt:["પિનિયન દાંતા = 10, રિંગ ગિયર દાંતા = 120. ગિયર રેશિયો = 120 ÷ 10 = 12:1. આર્મેચર 2400 rpm → એન્જિન 2400 ÷ 12 = 200 rpm. આર્મેચર ટોર્ક 10 N·m → ક્રેન્કશાફ્ટ પર આશરે 10 × 12 × 0.9 (કાર્યક્ષમતા) ≈ 108 N·m.","पिनियन दाँते = 10, रिंग गियर दाँते = 120। गियर अनुपात = 120 ÷ 10 = 12:1। आर्मेचर 2400 rpm → इंजन 2400 ÷ 12 = 200 rpm। आर्मेचर टॉर्क 10 N·m → क्रैंकशाफ्ट पर लगभग 10 × 12 × 0.9 (दक्षता) ≈ 108 N·m।","Pinion teeth = 10, ring-gear teeth = 120. Ratio = 120 ÷ 10 = 12:1. Armature 2400 rpm → engine 2400 ÷ 12 = 200 rpm. Armature torque 10 N·m → about 10 × 12 × 0.9 (efficiency) ≈ 108 N·m at the crankshaft."],
+ tTitle:["સ્ટાર્ટરના પ્રકાર","स्टार्टर के प्रकार","Types of starter"],
+ tCols:[["પ્રકાર","प्रकार","Type"],["ખાસિયત","विशेषता","Feature"],["ક્યાં વપરાય","कहाँ उपयोग","Typical use"]],
+ tRows:[
+  [["ડાયરેક્ટ ડ્રાઇવ","डायरेक्ट ड्राइव","Direct drive"],["આર્મેચર શાફ્ટ પર સીધું પિનિયન; મોટું અને ભારે","आर्मेचर शाफ्ट पर सीधा पिनियन; बड़ा और भारी","Pinion directly on the armature shaft; large and heavy"],["જૂનાં વાહન, ટ્રેક્ટર","पुराने वाहन, ट्रैक्टर","Older vehicles, tractors"]],
+  [["ગિયર રિડક્શન","गियर रिडक्शन","Gear reduction"],["આર્મેચર અને પિનિયન વચ્ચે ગિયર; નાની, ઝડપી મોટર","आर्मेचर और पिनियन के बीच गियर; छोटी, तेज़ मोटर","Gears between armature and pinion; smaller, faster motor"],["કાર, પિકઅપ","कार, पिकअप","Cars, pick-ups"]],
+  [["પ્લેનેટરી (PLGR)","प्लैनेटरी (PLGR)","Planetary (PLGR)"],["સન, પ્લેનેટ અને રિંગ ગિયર; નાનું અને હલકું","सन, प्लैनेट और रिंग गियर; छोटा और हल्का","Sun, planet and ring gears; compact and light"],["આધુનિક કાર, CRDI","आधुनिक कार, CRDI","Modern cars, CRDI"]],
+  [["પરમેનન્ટ મેગ્નેટ (PMGR)","परमानेंट मैग्नेट (PMGR)","Permanent magnet (PMGR)"],["ફીલ્ડ કોઇલને બદલે કાયમી ચુંબક","फील्ड कॉइल की जगह स्थायी चुंबक","Permanent magnets instead of field coils"],["નાની કાર, ટુ-વ્હીલર","छोटी कार, दोपहिया","Small cars, two-wheelers"]],
+  [["હેવી ડ્યુટી 24 V","हेवी ड्यूटी 24 V","Heavy duty 24 V"],["મોટો ટોર્ક; ઘણીવાર બે બેટરી શ્રેણીમાં","बड़ा टॉर्क; अक्सर दो बैटरी श्रेणी में","High torque; often two batteries in series"],["બસ, ટ્રક, જનરેટર","बस, ट्रक, जनरेटर","Buses, trucks, generators"]]
+ ],
+ pTitle:["સારી પ્રેક્ટિસ","अच्छी प्रैक्टिस","Good practice"],
+ pList:[
+  ["એક વારમાં 10–15 સેકન્ડથી વધુ ક્રેન્ક ન કરો; બે પ્રયાસ વચ્ચે 30–60 સેકન્ડ રાહ જુઓ.","एक बार में 10–15 सेकंड से ज़्यादा क्रैंक न करें; दो प्रयासों के बीच 30–60 सेकंड रुकें।","Crank for no more than 10–15 s at a time; wait 30–60 s between attempts."],
+  ["એન્જિન ચાલુ હોય ત્યારે START ક્યારેય ન દબાવો.","इंजन चालू हो तब START कभी न दबाएँ।","Never press START while the engine is running."],
+  ["સ્ટાર્ટર ખરાબ કહેતા પહેલાં બેટરી અને કેબલ કનેક્શન તપાસો.","स्टार्टर खराब कहने से पहले बैटरी और केबल कनेक्शन जाँचें।","Check the battery and cable connections before condemning the starter."],
+  ["માઉન્ટિંગ બોલ્ટ યોગ્ય ટોર્કથી કસો અને ફ્લાયવ્હીલ રિંગ ગિયર તપાસો.","माउंटिंग बोल्ट सही टॉर्क से कसें और फ्लाईव्हील रिंग गियर जाँचें।","Torque the mounting bolts correctly and inspect the flywheel ring gear."],
+  ["B+ ટર્મિનલ પર ઇન્સ્યુલેટિંગ બૂટ રાખો; ખુલ્લો ટર્મિનલ શોર્ટ અને આગનું જોખમ છે.","B+ टर्मिनल पर इंसुलेटिंग बूट रखें; खुला टर्मिनल शॉर्ट और आग का खतरा है।","Keep the insulating boot on the B+ terminal; an exposed terminal is a short-circuit and fire risk."]
+ ]
+};
+
+/* ================= 3D CORE ================= */
+const has3D=typeof THREE!=="undefined";
+const SHELL=new Set(["ringgear","def","yoke","pole","field","cef","solhouse","cap","clutch","pullin","holdin","bplate"]);
+let renderer,scene,camera,controls,clock;
+const meshes={},allMeshes=[],shellMeshes=[],G={};
+let leverPivot,plungerG,driveSpin,ringSpin,rspringMesh,cableB,cableG,cableS,armSpin;
+const plane=has3D?new THREE.Plane(new THREE.Vector3(0,0,-1),0):null;
+const SY=7.9;
+function init3D(){
+ const cv=$("cv");
+ renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+ renderer.outputEncoding=THREE.sRGBEncoding;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ renderer.toneMappingExposure=1.05;
+ renderer.localClippingEnabled=true;
+ scene=new THREE.Scene();
+ scene.background=new THREE.Color(0x1b2430);
+ camera=new THREE.PerspectiveCamera(36,1,0.1,600);
+ camera.position.set(-5,1,52);
+ controls=new THREE.OrbitControls(camera,cv);
+ controls.enableDamping=true;controls.dampingFactor=0.08;
+ controls.target.set(1.5,-1,0);controls.minDistance=5;controls.maxDistance=95;
+ controls.autoRotateSpeed=1.2;
+ controls.addEventListener("start",()=>{camTween=null});
+ clock=new THREE.Clock();
+ const pm=new THREE.PMREMGenerator(renderer);
+ const es=new THREE.Scene();
+ const sg=new THREE.SphereGeometry(50,32,16);
+ const cols=[];const top=new THREE.Color(0xe8eef5),bot=new THREE.Color(0x2a323c);
+ for(let i=0;i<sg.attributes.position.count;i++){const y=sg.attributes.position.getY(i)/50;const c=bot.clone().lerp(top,(y+1)/2);cols.push(c.r,c.g,c.b)}
+ sg.setAttribute("color",new THREE.Float32BufferAttribute(cols,3));
+ es.add(new THREE.Mesh(sg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})));
+ [[0,30,0,30,1,30],[30,10,10,1,14,24],[-30,6,-10,1,10,18]].forEach(b=>{const m=new THREE.Mesh(new THREE.BoxGeometry(b[3],b[4],b[5]),new THREE.MeshBasicMaterial({color:0xffffff}));m.position.set(b[0],b[1],b[2]);es.add(m)});
+ scene.environment=pm.fromScene(es,0.04).texture;
+ scene.add(new THREE.HemisphereLight(0xffffff,0x334455,0.45));
+ const d1=new THREE.DirectionalLight(0xffffff,1.0);d1.position.set(10,20,15);scene.add(d1);
+ const d2=new THREE.DirectionalLight(0xbfd4ff,0.35);d2.position.set(-15,5,-12);scene.add(d2);
+ const root=new THREE.Group();scene.add(root);ROOT=root;
+ ["bolts","arm","drive","outs","plan","de","yoke","brushes","ce","lever","strap","sol","work"].forEach(n=>{G[n]=new THREE.Group();G[n].userData.off=new THREE.Vector3();root.add(G[n])});
+ build();
+ buildDefects();
+ buildPlan();
+ const ro=new ResizeObserver(resize);ro.observe($("viewer"));resize();
+ setupPick(cv);
+ applyCut(true);
+ requestAnimationFrame(loop);
+}
+function resize(){
+ const v=$("viewer");const w=v.clientWidth,h=v.clientHeight;if(!w||!h)return;
+ renderer.setSize(w,h,false);camera.aspect=w/h;
+ camera.fov=w<520?48:36;camera.updateProjectionMatrix();
+}
+
+/* ---- materials ---- */
+let ROOT=null,FX=null,SOLF=null,MOTF=null;const FL={};
+const MAT={
+ steel:{color:0xbcc4cc,metalness:.9,roughness:.3},
+ steelDark:{color:0x7c8691,metalness:.85,roughness:.4},
+ paint:{color:0x0e1013,metalness:.5,roughness:.3},
+ iron:{color:0x4a5058,metalness:.8,roughness:.45},
+ alu:{color:0xd8dde2,metalness:.75,roughness:.38},
+ copper:{color:0xc77b43,metalness:1,roughness:.24},
+ enamel:{color:0x9c4a1c,metalness:.85,roughness:.3,clearcoat:1,clearcoatRoughness:.12,phys:1},
+ enamelLt:{color:0xc0783a,metalness:.85,roughness:.3,clearcoat:1,clearcoatRoughness:.12,phys:1},
+ brass:{color:0xd8b04c,metalness:1,roughness:.28},
+ carbon:{color:0x232323,metalness:.1,roughness:.85},
+ zinc:{color:0xcfd5db,metalness:.85,roughness:.28},
+ plastic:{color:0x1e2125,metalness:0,roughness:.6},
+ phenolic:{color:0x6b4a2a,metalness:0,roughness:.7},
+ bobbin:{color:0x2c2420,metalness:0,roughness:.7},
+ mica:{color:0x6b4a22,metalness:0,roughness:.5},
+ spring:{color:0xd1ae3a,metalness:.8,roughness:.35},
+ rubber:{color:0x141414,metalness:0,roughness:.9},
+ red:{color:0xb3261e,metalness:.1,roughness:.5},
+ black:{color:0x1a1c1f,metalness:.1,roughness:.55},
+ orange:{color:0xe08a1e,metalness:.1,roughness:.5},
+ batt:{color:0x1f2a36,metalness:.1,roughness:.5}
+};
+let lamTex=null;
+function mat(key){
+ if(key==="lam"){ if(!lamTex){const c=document.createElement("canvas");c.width=64;c.height=256;const x=c.getContext("2d");x.fillStyle="#a2abb4";x.fillRect(0,0,64,256);x.fillStyle="#5c656e";for(let y=0;y<256;y+=4)x.fillRect(0,y,64,1);lamTex=new THREE.CanvasTexture(c);lamTex.wrapS=lamTex.wrapT=THREE.RepeatWrapping;lamTex.repeat.set(1,3);lamTex.encoding=THREE.sRGBEncoding}
+  return new THREE.MeshStandardMaterial({map:lamTex,metalness:.75,roughness:.42,side:THREE.DoubleSide}); }
+ const o=Object.assign({side:THREE.DoubleSide},MAT[key]||MAT.steel);const phys=o.phys;delete o.phys;
+ return phys?new THREE.MeshPhysicalMaterial(o):new THREE.MeshStandardMaterial(o);
+}
+function add(parent,geo,key,part){
+ const m=new THREE.Mesh(geo,mat(key));
+ m.userData.part=part||null;
+ parent.add(m);
+ if(part){(meshes[part]||(meshes[part]=[])).push(m);allMeshes.push(m);if(SHELL.has(part))shellMeshes.push(m);}
+ return m;
+}
+/* ---- geometry helpers (axis = X) ---- */
+const PI=Math.PI;
+function cylX(r,len,x0,seg){const g=new THREE.CylinderGeometry(r,r,len,seg||40,1);g.rotateZ(-PI/2);g.translate(x0+len/2,0,0);return g}
+function latheX(prof,seg,ps,pl){const g=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[0],p[1])),seg||56,ps||0,pl===undefined?2*PI:pl);g.rotateZ(-PI/2);return g}
+function tubeX(rIn,rOut,x0,x1,seg,ps,pl){return latheX([[rIn,x0],[rOut,x0],[rOut,x1],[rIn,x1],[rIn,x0]],seg,ps,pl)}
+function gearShape(rRoot,rTip,n,holeR){
+ const s=new THREE.Shape();const st=2*PI/n;
+ for(let i=0;i<n;i++){const a=i*st;[[rRoot,a],[rTip,a+st*.2],[rTip,a+st*.45],[rRoot,a+st*.65]].forEach(([r,an],j)=>{const x=r*Math.cos(an),y=r*Math.sin(an);(i===0&&j===0)?s.moveTo(x,y):s.lineTo(x,y)})}
+ s.closePath();
+ if(holeR){const h=new THREE.Path();h.absarc(0,0,holeR,0,2*PI,true);s.holes.push(h)}
+ return s;
+}
+function gearX(rRoot,rTip,n,holeR,w,x0){const g=new THREE.ExtrudeGeometry(gearShape(rRoot,rTip,n,holeR),{depth:w,bevelEnabled:false,curveSegments:18});g.rotateY(PI/2);g.translate(x0,0,0);return g}
+class Helix extends THREE.Curve{constructor(len,r,turns,ph){super();this.len=len;this.r=r;this.tn=turns;this.ph=ph||0}getPoint(t,o){o=o||new THREE.Vector3();const a=t*this.tn*2*PI+this.ph;return o.set(t*this.len,this.r*Math.cos(a),this.r*Math.sin(a))}}
+function helix(len,r,turns,tube,ph){return new THREE.TubeGeometry(new Helix(len,r,turns,ph),Math.min(1400,Math.max(40,Math.round(turns*18))),tube,6,false)}
+const V=p=>new THREE.Vector3(p[0],p[1],p[2]);
+function pathTube(pts,r,seg){return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(V)),seg||64,r,8,false)}
+function racetrack(r,u0,u1,phiC,phiH,cr){
+ const v0=r*(phiC-phiH),v1=r*(phiC+phiH),pts=[];
+ [[u1-cr,v0+cr,-PI/2],[u1-cr,v1-cr,0],[u0+cr,v1-cr,PI/2],[u0+cr,v0+cr,PI]].forEach(([cu,cv,st])=>{for(let k=0;k<=6;k++){const a=st+k/6*PI/2;const u=cu+cr*Math.cos(a),v=cv+cr*Math.sin(a),f=v/r;pts.push(new THREE.Vector3(u,-r*Math.sin(f),r*Math.cos(f)))}});
+ return new THREE.CatmullRomCurve3(pts,true,"centripetal");
+}
+function label(text,x,y,z,parent,fg,bg){
+ const c=document.createElement("canvas");c.width=128;c.height=64;const g=c.getContext("2d");
+ g.fillStyle=bg||"rgba(15,29,39,.9)";g.beginPath();g.moveTo(14,4);g.lineTo(114,4);g.quadraticCurveTo(124,4,124,14);g.lineTo(124,50);g.quadraticCurveTo(124,60,114,60);g.lineTo(14,60);g.quadraticCurveTo(4,60,4,50);g.lineTo(4,14);g.quadraticCurveTo(4,4,14,4);g.fill();
+ g.fillStyle=fg||"#7dffb0";g.font="bold 34px monospace";g.textAlign="center";g.textBaseline="middle";g.fillText(text,64,34);
+ const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
+ s.scale.set(1.5,.75,1);s.position.set(x,y,z);s.renderOrder=12;parent.add(s);return s;
+}
+
+/* ---- build model ---- */
+function build(){
+ // ARMATURE (rotating)
+ armSpin=new THREE.Group();G.arm.add(armSpin);
+ add(armSpin,cylX(.9,28.4,-12.2),"steel","shaft");
+ add(armSpin,cylX(1.25,.35,-11.5),"brass","stopring");
+ add(armSpin,cylX(1.45,.15,15.55),"steel","shim");
+ add(armSpin,cylX(3.4,8.8,2.6,48),"lam","core");
+ for(let i=0;i<16;i++){
+  const a=i/16*2*PI,b=a+PI/2;
+  const m=add(armSpin,new THREE.BoxGeometry(8.9,.32,.44),"copper","winding");m.position.set(7.0,3.3*Math.cos(a),3.3*Math.sin(a));m.rotation.x=a;
+  [[2.6,-1],[11.4,1]].forEach(([e,d])=>{const pts=[];for(let s=0;s<=8;s++){const u=s/8,ang=a+u*(b-a),x=e+d*.95*Math.sin(PI*u),r=3.3+.22*Math.sin(PI*u);pts.push([x,r*Math.cos(ang),r*Math.sin(ang)])}add(armSpin,pathTube(pts,.12,24),"enamel","winding")});
+  add(armSpin,pathTube([[11.4,3.3*Math.cos(a),3.3*Math.sin(a)],[11.9,2.9*Math.cos(a),2.9*Math.sin(a)],[12.3,2.4*Math.cos(a),2.4*Math.sin(a)]],.085,8),"enamel","winding");
+ }
+ for(let i=0;i<20;i++){const ps=i/20*2*PI,len=2*PI/20;
+  add(armSpin,tubeX(1.5,2.05,12.4,14.4,3,ps,len*.86),"copper","comm");
+  add(armSpin,tubeX(1.5,2.55,12.15,12.42,3,ps,len*.86),"copper","comm");
+  add(armSpin,tubeX(1.5,1.97,12.45,14.35,1,ps+len*.86,len*.14),"mica","mica");}
+
+ // DRIVE (slides + spins)
+ driveSpin=new THREE.Group();G.drive.add(driveSpin);
+ add(driveSpin,gearX(1.75,2.15,10,.92,2.0,-9.6),"steel","pinion");
+ add(driveSpin,tubeX(1.0,2.6,-7.6,-4.0,40),"steelDark","clutch");
+ add(driveSpin,latheX([[1.0,-7.62],[2.6,-7.62],[2.6,-7.5],[1.0,-7.5],[1.0,-7.62]],40),"steelDark","clutch");
+ for(let i=0;i<5;i++){const a=i/5*2*PI;const m=add(driveSpin,cylX(.32,1.6,-6.6,16),"steel","rollers");m.position.set(0,1.75*Math.cos(a),1.75*Math.sin(a))}
+ {const g=helix(1.0,1.55,5,.1);g.translate(-4.0,0,0);add(driveSpin,g,"spring","mspring")}
+ add(driveSpin,cylX(1.5,2.4,-3.0),"steel","sleeve");
+ for(let i=0;i<8;i++){const a=i/8*2*PI;const m=add(driveSpin,new THREE.BoxGeometry(2.3,.12,.18),"steelDark","sleeve");m.position.set(-1.8,1.52*Math.cos(a),1.52*Math.sin(a));m.rotation.x=a}
+ add(driveSpin,cylX(2.4,.25,-1.75),"steel","sleeve");
+ add(driveSpin,cylX(2.4,.25,-.9),"steel","sleeve");
+
+ // DRIVE END FRAME
+ const gap=.5*PI;
+ add(G.de,latheX([[1.6,-12.4],[2.9,-11.6],[3.3,-10.5],[3.4,-6],[3.6,-3],[3.25,-3],[3.05,-6],[2.95,-10.5],[2.6,-11.6],[1.2,-12.0],[1.2,-12.4],[1.6,-12.4]],56,PI/2+gap/2,2*PI-gap),"alu","def");
+ add(G.de,latheX([[3.6,-3],[4.3,-1.2],[5.6,-.2],[5.6,1.0],[5.2,1.0],[5.2,.2],[3.9,-1.0],[3.25,-3],[3.6,-3]],56),"alu","def");
+ [-1,1].forEach(s=>{const m=add(G.de,new THREE.BoxGeometry(1.2,2.2,2.6),"alu","def");m.position.set(.4,-.6,6.6*s);const h=add(G.de,cylX(.55,1.25,-.22,20),"plastic","def");h.position.set(0,-.6,6.9*s)});
+ {const m=add(G.de,new THREE.BoxGeometry(1.6,1.4,3.2),"alu","def");m.position.set(.2,5.35,0)}
+ add(G.de,cylX(1.15,.8,-12.45),"brass","debush");
+
+ // YOKE: black field frame, iron pole shoes, real copper-strip field coils
+ add(G.yoke,tubeX(4.65,5.2,1,13,64),"paint","yoke");
+ [0,.5*PI,PI,1.5*PI].forEach(c=>{
+  add(G.yoke,tubeX(3.55,4.65,2.2,11.8,24,c-.18*PI,.36*PI),"iron","pole");
+  for(let L=0;L<4;L++){const r=3.72+.23*L;add(G.yoke,new THREE.TubeGeometry(racetrack(r,1.75-.08*L,12.25+.08*L,c,.215*PI,.4),150,.105,6,true),"copper","field")}
+ });
+ {const g=new THREE.CylinderGeometry(.35,.35,.9,16);g.translate(12.0,5.55,0);add(G.yoke,g,"brass","fterm");
+  const r=new THREE.TorusGeometry(.5,.14,8,20);r.rotateX(PI/2);r.translate(12.0,5.25,0);add(G.yoke,r,"rubber","fterm")}
+
+ // BRUSHES
+ for(let k=0;k<4;k++){
+  const a=PI/4+k*PI/2, ca=Math.cos(a), sa=Math.sin(a);
+  const b=add(G.brushes,new THREE.BoxGeometry(1.3,1.2,.9),"carbon","brush");b.position.set(13.4,2.68*ca,2.68*sa);b.rotation.x=a;
+  [-1,1].forEach(s=>{const h=add(G.brushes,new THREE.BoxGeometry(1.5,1.4,.08),"steel","bholder");h.position.set(13.4,2.85*ca-.52*s*sa,2.85*sa+.52*s*ca);h.rotation.x=a});
+  const sp=add(G.brushes,helix(.9,.28,5,.05),"spring","bspring");
+  sp.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),new THREE.Vector3(0,ca,sa));sp.position.set(13.4,3.28*ca,3.28*sa);
+  add(G.brushes,pathTube([[13.6,3.2*ca,3.2*sa],[14.4,3.9*ca,3.9*sa],[14.95,3.9*ca+.3*sa,3.9*sa-.3*ca]],.07),"copper","brush");
+ }
+ add(G.brushes,tubeX(2.3,4.5,14.9,15.2,48),"phenolic","bplate");
+
+ // CE FRAME
+ add(G.ce,latheX([[5.2,13],[5.2,15],[4.6,15.9],[2.0,16.5],[1.3,16.5],[1.3,16.2],[1.9,16.2],[4.3,15.6],[4.85,14.8],[4.85,13],[5.2,13]],56),"alu","cef");
+ add(G.ce,cylX(1.15,.7,15.8),"brass","cebush");
+
+ // THROUGH BOLTS
+ [2.2,-2.2].forEach(a=>{const y=5.55*Math.cos(a),z=5.55*Math.sin(a);const m=add(G.bolts,cylX(.22,16.2,.7,12),"steel","bolt");m.position.set(0,y,z);const h=add(G.bolts,cylX(.45,.4,16.9,6),"steel","bolt");h.position.set(0,y,z)});
+
+ // LEVER
+ leverPivot=new THREE.Group();leverPivot.position.set(-1.2,5.0,0);G.lever.add(leverPivot);
+ {const m=add(leverPivot,new THREE.BoxGeometry(.45,6.0,.6),"steelDark","fork");m.position.set(0,-.1,0);
+  const g=new THREE.TorusGeometry(1.9,.22,8,24,PI);g.rotateY(PI/2);g.translate(0,-5.0,0);add(leverPivot,g,"steelDark","fork");
+  const p=new THREE.CylinderGeometry(.3,.3,1.3,16);p.rotateX(PI/2);add(leverPivot,p,"brass","pivot");}
+
+ // SOLENOID with real wire turns
+ const S=g=>{g.translate(0,SY,0);return g};
+ add(G.sol,S(tubeX(2.05,2.45,0,8.5,48)),"zinc","solhouse");
+ add(G.sol,S(tubeX(1.05,2.45,0,.3,48)),"zinc","solhouse");
+ add(G.sol,S(cylX(1.3,.9,7.6)),"steel","solhouse");
+ add(G.sol,S(tubeX(1.12,1.24,.45,7.55,40)),"bobbin","solhouse");
+ add(G.sol,S(tubeX(1.12,2.0,.45,.55,40)),"bobbin","solhouse");
+ add(G.sol,S(tubeX(1.12,2.0,7.45,7.55,40)),"bobbin","solhouse");
+ [[1.32,0],[1.46,PI]].forEach(([r,ph])=>{const g=helix(6.85,r,50,.066,ph);g.translate(.58,SY,0);add(G.sol,g,"enamelLt","holdin")});
+ [[1.64,0],[1.83,PI]].forEach(([r,ph])=>{const g=helix(6.85,r,30,.088,ph);g.translate(.58,SY,0);add(G.sol,g,"enamel","pullin")});
+ add(G.sol,S(tubeX(2.15,2.45,8.5,11,48)),"plastic","cap");
+ add(G.sol,S(tubeX(0,2.45,10.75,11,48)),"plastic","cap");
+ rspringMesh=add(G.sol,helix(2.4,.62,6,.07),"spring","rspring");rspringMesh.geometry.translate(-2.4,0,0);rspringMesh.position.set(7.6,SY,0);
+ plungerG=new THREE.Group();G.sol.add(plungerG);
+ add(plungerG,S(cylX(1.0,6.4,-1.2)),"steel","plunger");
+ {const g=new THREE.TorusGeometry(.42,.14,8,20);g.translate(-1.25,SY,0);add(plungerG,g,"steel","plunger")}
+ add(plungerG,S(cylX(.25,3.6,5.2,16)),"steel","contact");
+ add(plungerG,S(cylX(1.5,.25,8.7)),"copper","contact");
+ [[1.1,"termB"],[-1.1,"termM"]].forEach(([dy,p])=>{
+  add(G.sol,(()=>{const g=cylX(.3,2.4,9.9,16);g.translate(0,SY+dy,0);return g})(),"copper",p);
+  add(G.sol,(()=>{const g=cylX(.58,.45,11.05,6);g.translate(0,SY+dy,0);return g})(),"brass",p);
+  add(G.sol,(()=>{const g=cylX(.75,.12,11.0,24);g.translate(0,SY+dy,0);return g})(),"brass",p);
+ });
+ {const m=add(G.sol,new THREE.BoxGeometry(.8,1.0,.16),"brass","termS");m.position.set(10.0,SY+2.85,0);
+  const b=add(G.sol,new THREE.CylinderGeometry(.35,.35,.4,12),"plastic","termS");b.position.set(10.0,SY+2.45,0)}
+ label("30",12.6,SY+1.9,0,G.sol);label("M",12.6,SY-1.9,0,G.sol);label("50",10.0,SY+4.1,0,G.sol);
+
+ // STRAP
+ add(G.strap,pathTube([[11.4,SY-1.1,0],[12.6,SY-1.1,0],[12.9,6.4,0],[12.0,6.05,0]],.2),"copper","strap");
+
+ // WORK-ONLY: flywheel ring gear, battery, cables (behind the starter)
+ ringSpin=new THREE.Group();ringSpin.position.set(0,-13.45,0);G.work.add(ringSpin);
+ {const g=gearX(11.25,11.7,96,9.6,1.3,-11.2);ringSpin.add(new THREE.Mesh(g,mat("steel")));
+  ringSpin.add(new THREE.Mesh(cylX(9.7,.7,-11.0,64),mat("steelDark")));
+  ringSpin.add(new THREE.Mesh(cylX(2.5,1.6,-11.6,32),mat("steel")));
+  for(let i=0;i<6;i++){const a=i/6*2*PI;const b=new THREE.Mesh(cylX(.45,.3,-11.3,10),mat("brass"));b.position.set(0,5.5*Math.cos(a),5.5*Math.sin(a));ringSpin.add(b)}
+  for(let i=0;i<3;i++){const a=i/3*2*PI+.3;const b=new THREE.Mesh(new THREE.BoxGeometry(.2,2.4,.5),mat("red"));b.position.set(-11.75,7.5*Math.cos(a),7.5*Math.sin(a));b.rotation.x=-a;ringSpin.add(b)}}
+ {const b=new THREE.Mesh(new THREE.BoxGeometry(5,3.6,3.2),mat("batt"));b.position.set(15,-8,-7);G.work.add(b);
+  const p1=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.6,16),mat("red"));p1.position.set(13.6,-5.9,-7);G.work.add(p1);
+  const p2=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.6,16),mat("black"));p2.position.set(16.4,-5.9,-7);G.work.add(p2);
+  label("12V",15,-8,-5.2,G.work);}
+ cableB=new THREE.Mesh(pathTube(CAB_B,.28),mat("red"));G.work.add(cableB);
+ cableG=new THREE.Mesh(pathTube(CAB_G,.25),mat("black"));G.work.add(cableG);
+ cableS=new THREE.Mesh(pathTube(CAB_S,.08),mat("orange"));G.work.add(cableS);
+ G.work.visible=false;
+ buildFX();
+}
+
+/* ---- live effects: magnetic field lines and current particles ---- */
+const CAB_B=[[13.6,-5.7,-7],[17.5,-2,-6.5],[18.5,5,-4.5],[14,SY+1.5,-1.8],[11.6,SY+1.1,0]];
+const CAB_G=[[16.4,-5.7,-7],[10,-6.5,-8],[3,-3.5,-7.6],[.6,-.9,-7.0]];
+const CAB_S=[[14.2,-5.7,-7],[20,2,-6],[14,SY+4.5,-2.2],[10.0,SY+3.3,0]];
+const fc=(x,phi,r)=>[x,-r*Math.sin(phi),r*Math.cos(phi)];
+const ac=(x,a,r)=>[x,r*Math.cos(a),r*Math.sin(a)];
+function hpts(r,x0,x1,turns,n){const a=[];for(let i=0;i<=n;i++){const u=i/n,ang=u*turns*2*PI;a.push([x0+(x1-x0)*u,SY+r*Math.cos(ang),r*Math.sin(ang)])}return a}
+function fieldMat(c){return new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0,depthWrite:false,toneMapped:false})}
+function makeArrows(F,per,color,size){
+ const n=F.curves.length*per;
+ const inst=new THREE.InstancedMesh(new THREE.SphereGeometry(size,8,6),new THREE.MeshBasicMaterial({color,depthWrite:false,toneMapped:false}),n);
+ inst.renderOrder=9;F.g.add(inst);F.inst=inst;F.per=per;F.samples=F.curves.map(c=>c.getSpacedPoints(220));F.ph=0;
+}
+function makeFlow(pts,color,n,size){
+ const curve=new THREE.CatmullRomCurve3(pts.map(V),false,"centripetal");
+ const inst=new THREE.InstancedMesh(new THREE.SphereGeometry(size,8,6),new THREE.MeshBasicMaterial({color,depthTest:false,depthWrite:false,toneMapped:false}),n);
+ inst.renderOrder=11;inst.visible=false;FX.add(inst);
+ return {inst,n,ph:0,s:curve.getSpacedPoints(900)};
+}
+function buildFX(){
+ FX=new THREE.Group();ROOT.add(FX);FX.visible=false;
+ // solenoid field
+ SOLF={g:new THREE.Group(),mat:fieldMat(0x58c4ff),curves:[],labels:[],dir:[]};
+ SOLF.g.position.set(4.25,SY,0);FX.add(SOLF.g);
+ [[.3,2.9,6.2,0],[.75,3.7,7.2,PI/6]].forEach(([ri,ro,a,off])=>{for(let k=0;k<6;k++){const th=off+k*PI/3,pts=[];
+  for(let j=0;j<56;j++){const t=j/56*2*PI,c=Math.cos(t),s=Math.sin(t);const x=a*Math.sign(c)*Math.pow(Math.abs(c),.5);const r=(ri+ro)/2+(ro-ri)/2*Math.sign(s)*Math.pow(Math.abs(s),.5);pts.push(new THREE.Vector3(x,r*Math.cos(th),r*Math.sin(th)))}
+  const cv=new THREE.CatmullRomCurve3(pts,true,"centripetal");SOLF.curves.push(cv);SOLF.dir.push(-1);SOLF.g.add(new THREE.Mesh(new THREE.TubeGeometry(cv,140,.035,5,true),SOLF.mat))}});
+ makeArrows(SOLF,3,0xbfefff,.1);
+ SOLF.labels.push(label("S",-4.6,3.3,0,SOLF.g,"#ffffff","rgba(30,90,200,.9)"),label("N",4.6,3.3,0,SOLF.g,"#ffffff","rgba(200,40,40,.9)"));
+ // motor field (4-pole) in three cross-sections
+ MOTF={g:new THREE.Group(),mat:fieldMat(0x58c4ff),curves:[],labels:[],dir:[]};FX.add(MOTF.g);
+ [3.6,7.0,10.4].forEach(x=>{for(let p=0;p<4;p++){const A=p*PI/2,B=A+PI/2;
+  const seq=[[A,3.4],[A+.1*PI,2.5],[A+.25*PI,1.95],[B-.1*PI,2.5],[B,3.4],[B,4.3],[B,4.92],[B-.25*PI,4.97],[A,4.92],[A,4.3]];
+  const cv=new THREE.CatmullRomCurve3(seq.map(([f,r])=>V(fc(x,f,r))),true,"centripetal");MOTF.curves.push(cv);MOTF.dir.push(p%2?-1:1);
+  MOTF.g.add(new THREE.Mesh(new THREE.TubeGeometry(cv,120,.03,5,true),MOTF.mat))}});
+ makeArrows(MOTF,2,0xbfefff,.09);
+ for(let p=0;p<4;p++){const q=fc(7.0,p*PI/2,5.9);MOTF.labels.push(label(p%2?"S":"N",q[0],q[1],q[2],MOTF.g,"#ffffff",p%2?"rgba(30,90,200,.9)":"rgba(200,40,40,.9)"))}
+ // current paths (conventional current, + to −)
+ const motor=[[11.6,SY-1.1,0],[12.6,SY-1.1,0],[12.9,6.4,0],[12.0,6.05,0],[12.0,5.0,0],
+  fc(12.1,1.79*PI,4.1),fc(1.9,1.79*PI,4.1),fc(1.9,2.21*PI,4.1),fc(12.1,2.21*PI,4.1),fc(12.5,2.0*PI,4.55),fc(12.5,1.5*PI,4.6),
+  fc(12.1,1.29*PI,4.0),fc(1.9,1.29*PI,4.0),fc(1.9,1.71*PI,4.0),fc(12.1,1.71*PI,4.0),
+  [13.0,2.6,2.2],[13.4,2.2,2.2],[13.4,1.5,1.5],[12.3,1.75,1.75],ac(11.4,PI/4,3.3),ac(2.6,PI/4,3.3),ac(1.7,PI/2,3.5),ac(2.6,3*PI/4,3.3),ac(11.4,3*PI/4,3.3),
+  [12.3,-1.75,1.75],[13.4,-1.5,1.5],[13.4,-2.2,2.2],[14.4,-2.8,2.8],[15.0,-3.2,3.0],[15.6,-4.6,1.6],[12,-5.35,-.5],[6,-5.4,-1.5],[1,-5.3,-2.5],[.6,-.9,-7.0]];
+ const toBatt=CAB_G.slice().reverse().slice(1);
+ FL.main=makeFlow([...CAB_B,[10.4,SY+1.1,0],[9.95,SY+1.1,0],[9.95,SY-1.1,0],[10.4,SY-1.1,0],...motor,...toBatt],0xffc400,120,.17);
+ FL.pull=makeFlow([...CAB_S,[10.0,SY+2.3,0],[7.6,SY+1.9,0],...hpts(1.74,7.4,.6,7,84),[.3,SY-1.9,0],[.0,SY-2.75,0],[5,SY-2.8,0],[10.6,SY-1.6,0],...motor,...toBatt],0x4dd0e1,90,.13);
+ FL.hold=makeFlow([...CAB_S,[10.0,SY+2.3,0],[7.6,SY+1.55,0],...hpts(1.4,7.4,.6,9,108),[.3,SY-1.45,0],[-.1,SY-2.45,0],[0,5.6,0],[.3,4.2,-2],[.5,1,-5.6],[.6,-.9,-7.0],...toBatt],0xc792ff,70,.12);
+}
+const _m4=has3D?new THREE.Matrix4():null;
+function runFlow(f,speed,dt){
+ if(!speed){f.inst.visible=false;return}
+ f.inst.visible=true;f.ph+=speed*dt;const S=f.s.length-1;
+ for(let i=0;i<f.n;i++){let u=(i/f.n+f.ph)%1;if(u<0)u+=1;const p=f.s[Math.floor(u*S)];_m4.makeTranslation(p.x,p.y,p.z);f.inst.setMatrixAt(i,_m4)}
+ f.inst.instanceMatrix.needsUpdate=true;
+}
+function moveArrows(F,step,s){
+ F.inst.visible=s>.04;if(!F.inst.visible)return;F.ph+=step;
+ let k=0;F.samples.forEach((smp,c)=>{const S=smp.length-1;for(let j=0;j<F.per;j++){let u=(j/F.per+F.ph*F.dir[c])%1;if(u<0)u+=1;const p=smp[Math.floor(u*S)];_m4.makeTranslation(p.x,p.y,p.z);F.inst.setMatrixAt(k++,_m4)}});
+ F.inst.instanceMatrix.needsUpdate=true;
+}
+function updateFX(dt){
+ if(!FX||!FX.visible)return;
+ const s1=magOn?sim.sSol:0,s2=magOn?sim.sField:0;
+ SOLF.mat.opacity=.8*s1;SOLF.g.scale.set(1,.12+.88*s1,.12+.88*s1);SOLF.labels.forEach(l=>l.material.opacity=s1);
+ MOTF.mat.opacity=.6*s2;MOTF.g.scale.set(1,.45+.55*s2,.45+.55*s2);MOTF.labels.forEach(l=>l.material.opacity=s2);
+ moveArrows(SOLF,dt*.35*s1,s1);moveArrows(MOTF,dt*.3*s2,s2);
+ runFlow(FL.main,curOn?sim.iMain/200*.13:0,dt);
+ runFlow(FL.pull,curOn?sim.iPull*.11:0,dt);
+ runFlow(FL.hold,curOn?sim.iHold*.09:0,dt);
+}
+
+
+/* ---- cut / x-ray ---- */
+let cutOn=true,xrayOn=false;
+function applyCut(on){cutOn=on;shellMeshes.forEach(m=>{m.material.clippingPlanes=on?[plane]:[];m.material.needsUpdate=true});$("bCut").setAttribute("aria-pressed",on)}
+function applyXray(on){xrayOn=on;shellMeshes.forEach(m=>{m.material.transparent=on;m.material.opacity=on?.2:1;m.material.depthWrite=!on;m.material.needsUpdate=true});$("bXray").setAttribute("aria-pressed",on)}
+
+/* ---- highlight & live ---- */
+let hlSet=new Set(),liveSet=new Set(),hlGlow=true;
+const AMBER=has3D?new THREE.Color(0xffb300):null, ORANGE=has3D?new THREE.Color(0xff6a00):null, BLACK=has3D?new THREE.Color(0x000000):null;
+function resetEmissive(){allMeshes.forEach(m=>m.material.emissive&&m.material.emissive.copy(BLACK))}
+function setHL(ids){hlSet=new Set(ids);resetEmissive();updateTag()}
+function setLive(ids){liveSet=new Set(ids);resetEmissive()}
+function paintEmissive(t){
+ const a=.35+.25*Math.sin(t*5), b=.45+.35*Math.sin(t*14);
+ liveSet.forEach(id=>(meshes[id]||[]).forEach(m=>{if(!hlSet.has(id))m.material.emissive.copy(ORANGE).multiplyScalar(b)}));
+ if(hlGlow)hlSet.forEach(id=>(meshes[id]||[]).forEach(m=>m.material.emissive.copy(AMBER).multiplyScalar(a)));
+ [cableB,cableG,cableS].forEach(c=>{if(c)c.material.emissive.copy(BLACK)});
+ if(flow.main){cableB.material.emissive.setRGB(1,.35,0).multiplyScalar(b);cableG.material.emissive.setRGB(.9,.5,0).multiplyScalar(b*.6)}
+ if(flow.ctrl){cableS.material.emissive.setRGB(1,.6,0).multiplyScalar(b);if(!flow.main)cableG.material.emissive.setRGB(.9,.5,0).multiplyScalar(b*.4)}
+}
+/* ---- floating tag ---- */
+let tagPart=null;
+function updateTag(){
+ const ids=[...hlSet];tagPart=ids.length===1?ids[0]:null;
+ const tag=$("tag");if(!tagPart){tag.hidden=true;return}
+ tag.textContent=BY[tagPart]?BY[tagPart].n+" · "+L(BY[tagPart].name):"";tag.hidden=false;
+}
+const _box=has3D?new THREE.Box3():null,_v=has3D?new THREE.Vector3():null;
+function placeTag(){
+ if(!tagPart)return;const ms=meshes[tagPart];if(!ms)return;
+ _box.makeEmpty();ms.forEach(m=>_box.expandByObject(m));_box.getCenter(_v);
+ if(cutOn&&SHELL.has(tagPart))_v.z=Math.min(_v.z,0);
+ _v.y=_box.max.y;_v.project(camera);
+ const v=$("viewer"),tag=$("tag");
+ if(_v.z>1){tag.style.opacity=0;return}tag.style.opacity=1;
+ const x=Math.max(40,Math.min(v.clientWidth-40,(_v.x*.5+.5)*v.clientWidth)),y=Math.max(36,(-_v.y*.5+.5)*v.clientHeight);
+ tag.style.left=x+"px";tag.style.top=y+"px";
+}
+
+/* ---- picking ---- */
+function visibleChain(o){while(o){if(!o.visible)return false;o=o.parent}return true}
+function setupPick(cv){
+ const rc=new THREE.Raycaster(),p=new THREE.Vector2();let down=null;
+ cv.addEventListener("pointerdown",e=>{down=[e.clientX,e.clientY]});
+ cv.addEventListener("pointerup",e=>{
+  if(!down)return;const d=Math.hypot(e.clientX-down[0],e.clientY-down[1]);down=null;if(d>6)return;
+  const r=cv.getBoundingClientRect();p.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+  rc.setFromCamera(p,camera);
+  const hits=rc.intersectObjects(allMeshes,false).filter(h=>visibleChain(h.object)&&!(cutOn&&SHELL.has(h.object.userData.part)&&h.point.z>.02)&&!(xrayOn&&SHELL.has(h.object.userData.part)));
+  const hit=hits[0]||rc.intersectObjects(allMeshes,false).filter(h=>visibleChain(h.object)&&!(cutOn&&SHELL.has(h.object.userData.part)&&h.point.z>.02))[0];
+  if(hit)onPick(hit.object.userData.part);
+ });
+}
+
+/* ---- camera tween ---- */
+let camTween=null;
+const VIEWS={parts:[[12,9,27],[2.5,3,0]],work:[[-5,1,52],[1.5,-1,0]],dis:[[6,5,62],[1,0,0]],test:[[12,9,27],[2.5,3,0]],quiz:[[12,9,27],[2.5,3,0]],insp:[[12,9,27],[2.5,3,0]],theory:[[12,9,27],[2.5,3,0]]};
+function goView(k){if(!has3D)return;const v=VIEWS[k];camTween={p:new THREE.Vector3(...v[0]),t:new THREE.Vector3(...v[1])}}
+function focusPart(id,want){
+ if(!has3D)return;const ms=meshes[id];if(!ms)return;_box.makeEmpty();ms.forEach(m=>_box.expandByObject(m));const c=_box.getCenter(new THREE.Vector3());
+ if(cutOn&&SHELL.has(id))c.z=Math.min(c.z,0);
+ const dir=camera.position.clone().sub(controls.target);const dist=want||Math.min(Math.max(dir.length(),14),26);
+ camTween={t:c,p:c.clone().add(dir.normalize().multiplyScalar(dist))};
+}
+
+
+/* ================= DEFECTS FOR VISUAL INSPECTION ================= */
+const DEF={};
+function gearDamaged(){
+ const rRoot=1.75,rTip=2.15,n=10,st=2*PI/n,s=new THREE.Shape();
+ const tip=i=>i===2||i===3?rRoot+.13:(i===6?rRoot+.02:(i===7?rRoot+.25:rTip-.06));
+ for(let i=0;i<n;i++){const a=i*st,rt=tip(i);[[rRoot,a],[rt,a+st*.24],[rt,a+st*.41],[rRoot,a+st*.65]].forEach(([r,an],j)=>{const x=r*Math.cos(an),y=r*Math.sin(an);(i===0&&j===0)?s.moveTo(x,y):s.lineTo(x,y)})}
+ s.closePath();const h=new THREE.Path();h.absarc(0,0,.92,0,2*PI,true);s.holes.push(h);
+ const g=new THREE.ExtrudeGeometry(s,{depth:2.0,bevelEnabled:false,curveSegments:18});g.rotateY(PI/2);g.translate(-9.6,0,0);return g;
+}
+function buildDefects(){
+ DEF.pinOK=meshes.pinion[0];
+ DEF.pinBad=add(driveSpin,gearDamaged(),"steelDark","pinion");DEF.pinBad.material.color.setHex(0x8d8578);DEF.pinBad.material.roughness=.6;DEF.pinBad.visible=false;
+ DEF.crack=[
+  add(G.de,pathTube([[1.0,.5,7.93],[.62,.02,7.93],[.82,-.45,7.93],[.32,-1.05,7.93],[.5,-1.6,7.93]],.07,30),"black","def"),
+  add(G.de,pathTube([[-.05,4.8,1.63],[.35,5.25,1.63],[.12,5.7,1.63],[.5,6.0,1.63]],.06,16),"black","def")];
+ DEF.crack.forEach(m=>{m.visible=false;m.material.color.setHex(0x050505)});
+ DEF.rub=[add(armSpin,tubeX(3.405,3.44,3.6,5.6,48,0,PI*1.3),"steel","core"),add(armSpin,tubeX(3.405,3.44,8.2,9.8,48,PI*.4,PI*1.1),"steel","core")];
+ DEF.rub.forEach(m=>{m.visible=false;m.material.color.setHex(0xffffff);m.material.metalness=1;m.material.roughness=.08});
+ DEF.corr=[];
+ [[SY+1.1],[SY-1.1]].forEach(([y])=>{for(let k=0;k<9;k++){const g=new THREE.IcosahedronGeometry(.13+Math.random()*.13,0);const m=add(G.sol,g,"plastic",y>SY?"termB":"termM");const a=Math.random()*2*PI;m.position.set(10.6+Math.random()*.9,y+.42*Math.cos(a),.42*Math.sin(a));m.material.color.setHex(k%3?0x9fd4b4:0xe9f1e6);m.material.roughness=1;m.material.metalness=0;m.visible=false;DEF.corr.push(m)}});
+ DEF.brushBoxes=meshes.brush.filter(m=>m.geometry.type==="BoxGeometry");
+ DEF.brushBoxes.forEach(m=>{m.userData.p0=m.position.clone()});
+ DEF.spring0=meshes.bspring[0];
+ DEF.disc=meshes.contact.find(m=>m.geometry.parameters&&m.geometry.parameters.radiusTop===1.5)||meshes.contact[meshes.contact.length-1];
+}
+function saveMat(m){if(!m.userData.o){const x=m.material;m.userData.o={c:x.color.getHex(),r:x.roughness,mt:x.metalness}}}
+function tint(list,c,r,mt){list.forEach(m=>{if(DEF.rub.includes(m)||DEF.crack.includes(m)||DEF.corr.includes(m))return;saveMat(m);m.material.color.setHex(c);m.material.roughness=r;m.material.metalness=mt})}
+function resetDefects(){
+ if(!has3D||!DEF.pinOK)return;
+ allMeshes.forEach(m=>{const o=m.userData.o;if(o){m.material.color.setHex(o.c);m.material.roughness=o.r;m.material.metalness=o.mt}});
+ DEF.pinOK.visible=true;DEF.pinBad.visible=false;
+ DEF.crack.forEach(m=>m.visible=false);DEF.rub.forEach(m=>m.visible=false);DEF.corr.forEach(m=>m.visible=false);
+ DEF.brushBoxes.forEach(m=>{m.scale.y=1;m.position.copy(m.userData.p0)});
+ DEF.spring0.visible=true;
+ planDefect(false);
+}
+function applyDefect(d){
+ resetDefects();if(!has3D||!DEF.pinOK)return;
+ switch(d){
+  case "crack":DEF.crack.forEach(m=>m.visible=true);break;
+  case "pinionBad":DEF.pinOK.visible=false;DEF.pinBad.visible=true;break;
+  case "commBurnt":tint(meshes.comm,0x2e1b12,.95,.35);tint(meshes.mica,0x120a06,1,0);break;
+  case "brushWorn":DEF.brushBoxes.forEach(m=>{const p=m.userData.p0,r=Math.hypot(p.y,p.z);m.scale.y=.42;m.position.set(p.x,p.y/r*2.33,p.z/r*2.33)});break;
+  case "springBroken":DEF.spring0.visible=false;break;
+  case "rubbing":DEF.rub.forEach(m=>m.visible=true);break;
+  case "fieldBurnt":tint(meshes.field,0x2a1a12,.95,.25);break;
+  case "contactBurnt":tint([DEF.disc],0x241b16,1,.2);tint(meshes.termB.slice(0,1).concat(meshes.termM.slice(0,1)),0x3a2a20,.95,.3);break;
+  case "corrosion":DEF.corr.forEach(m=>m.visible=true);tint(meshes.termB.concat(meshes.termM),0x8a7a4a,.9,.4);break;
+  case "planetWorn":planDefect(true);break;
+  case "bushWorn":tint(meshes.debush.concat(meshes.cebush),0x4b4f86,.55,.9);break;
+ }
+}
+
+/* ================= PLANETARY GEAR SET (PLGR) ================= */
+const PR=5,ZS=10,ZP=15,ZR=40;           // ratio (ZR+ZS)/ZS = 5
+let PLAN=false;try{PLAN=localStorage.getItem("sm3d-plan")==="1"}catch(e){}
+const PL={};
+function extX(shape,w,x0){const g=new THREE.ExtrudeGeometry(shape,{depth:w,bevelEnabled:false,curveSegments:24});g.rotateY(PI/2);g.translate(x0,0,0);return g}
+function extGear(rRoot,rTip,n,holeR,tipFn){
+ const s=new THREE.Shape(),st=2*PI/n;
+ for(let i=0;i<n;i++){const a=i*st,rt=tipFn?tipFn(i):rTip;[[rRoot,a],[rt,a+st*.22],[rt,a+st*.43],[rRoot,a+st*.65]].forEach(([r,an],j)=>{const x=r*Math.cos(an),y=r*Math.sin(an);(i===0&&j===0)?s.moveTo(x,y):s.lineTo(x,y)})}
+ s.closePath();if(holeR){const h=new THREE.Path();h.absarc(0,0,holeR,0,2*PI,true);s.holes.push(h)}return s;
+}
+function internalGear(rOut,rTip,rRoot,n){
+ const s=new THREE.Shape();s.absarc(0,0,rOut,0,2*PI,false);
+ const h=new THREE.Path(),st=2*PI/n;
+ for(let i=0;i<n;i++){const a=-i*st;[[rRoot,a],[rTip,a-st*.25],[rTip,a-st*.45],[rRoot,a-st*.68]].forEach(([r,an],j)=>{const x=r*Math.cos(an),y=r*Math.sin(an);(i===0&&j===0)?h.moveTo(x,y):h.lineTo(x,y)})}
+ h.closePath();s.holes.push(h);return s;
+}
+function buildPlan(){
+ const X0=-0.42,W=1.3;
+ // armature side: thin stub + sun gear (spin with armature), split armature shaft
+ PL.armBits=[
+  add(armSpin,cylX(.9,15.3,.9),"steel","shaft"),
+  add(armSpin,cylX(.5,1.6,-.6),"steel","sun"),
+  add(armSpin,extX(extGear(.585,.845,ZS,0),W,X0),"steel","sun")
+ ];
+ // output shaft (turns with carrier, not with the sliding drive)
+ PL.outSpin=new THREE.Group();G.outs.add(PL.outSpin);
+ add(PL.outSpin,cylX(.9,11.6,-12.2),"steel","carrier");
+ // ring gear: stationary, moulded resin
+ const ring=add(G.plan,extX(internalGear(3.3,2.8,3.02,ZR),W,X0),"plastic","ringgear");
+ ring.material.color.setHex(0x9a7552);ring.material.roughness=.5;ring.material.metalness=.05;
+ // carrier with 3 pins and planets
+ PL.carrier=new THREE.Group();G.plan.add(PL.carrier);
+ add(PL.carrier,cylX(2.35,.17,-.62,48),"steelDark","carrier");
+ add(PL.carrier,cylX(1.05,.5,-1.0,32),"steelDark","carrier");
+ PL.planets=[];
+ const orbit=1.8125;
+ for(let k=0;k<3;k++){
+  const a=k*2*PI/3,y=orbit*Math.cos(a),z=orbit*Math.sin(a);
+  const pin=add(PL.carrier,cylX(.3,1.5,-.5,16),"brass","carrier");pin.position.set(0,y,z);
+  const p=add(PL.carrier,extX(extGear(.95,1.21,ZP,.32),W*.92,X0+.05),"steel","planet");p.position.set(0,y,z);p.rotation.x=k*.37;
+  PL.planets.push(p);
+ }
+ PL.badPlanet=add(PL.carrier,extX(extGear(.95,1.21,ZP,.32,i=>i===3||i===4?1.0:(i===9?.97:1.17)),W*.92,X0+.05),"steelDark","planet");
+ PL.badPlanet.position.copy(PL.planets[0].position);PL.badPlanet.material.color.setHex(0x8a8275);PL.badPlanet.material.roughness=.65;PL.badPlanet.visible=false;
+ setPlan(PLAN,true);
+}
+function setPlan(on,quiet){
+ PLAN=!!on;try{localStorage.setItem("sm3d-plan",PLAN?"1":"0")}catch(e){}
+ if(has3D&&PL.armBits){
+  G.plan.visible=PLAN;G.outs.visible=PLAN;
+  meshes.shaft[0].visible=!PLAN;PL.armBits.forEach(m=>m.visible=PLAN);
+ }
+ const b=$("bPlan");if(b)b.setAttribute("aria-pressed",PLAN);
+ if(!quiet&&typeof planChanged==="function")planChanged();
+}
+function planDefect(on){if(!PL.planets)return;PL.planets[0].visible=!on;PL.badPlanet.visible=on}
+
+/* ================= STATE: live simulation ================= */
+const tgt={explode:{}};
+const flow={main:false,ctrl:false};
+const inspSpin={t:0,w:0,lock:false};
+let mode="parts";
+let curOn=true,magOn=true,vibOn=true;
+const sim={key:false,fuel:true,engine:"off",crankT:0,contactT:0,relT:99,plg:0,contact:false,arm:0,pin:0,ring:0,ringAng:0,sSol:0,sField:0,iMain:0,iPull:0,iHold:0,slow:false,shake:0,vibT:0,phase:0};
+function resetSim(){Object.assign(sim,{key:false,engine:"off",crankT:0,contactT:0,relT:99,contact:false,iMain:0,iPull:0,iHold:0,phase:0,shake:0})}
+function buzz(ms){if(!vibOn)return;try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+
+/* ---- sound (synthesised, no files) ---- */
+const SND={ctx:null,on:true,
+ init(){
+  if(this.ctx)return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+  try{
+  const c=new C();this.ctx=c;const m=c.createGain();m.gain.value=.55;m.connect(c.destination);this.master=m;
+  const nb=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.nb=nb;
+  // starter motor whine
+  const o1=c.createOscillator();o1.type="sawtooth";const o2=c.createOscillator();o2.type="square";
+  const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=600;lp.Q.value=3;
+  const mg=c.createGain();mg.gain.value=0;o1.connect(lp);o2.connect(lp);lp.connect(mg);mg.connect(m);o1.start();o2.start();
+  Object.assign(this,{o1,o2,mlp:lp,mg});
+  // pinion / ring gear grind
+  const ns=c.createBufferSource();ns.buffer=nb;ns.loop=true;const bp=c.createBiquadFilter();bp.type="bandpass";bp.frequency.value=2200;bp.Q.value=4;
+  const gg=c.createGain();gg.gain.value=0;ns.connect(bp);bp.connect(gg);gg.connect(m);ns.start();Object.assign(this,{gg,gbp:bp});
+  // diesel engine rumble with firing pulses
+  const ns2=c.createBufferSource();ns2.buffer=nb;ns2.loop=true;const elp=c.createBiquadFilter();elp.type="lowpass";elp.frequency.value=170;
+  const am=c.createGain();am.gain.value=.5;const lfo=c.createOscillator();lfo.type="square";lfo.frequency.value=25;const lfoG=c.createGain();lfoG.gain.value=.5;
+  lfo.connect(lfoG);lfoG.connect(am.gain);ns2.connect(elp);elp.connect(am);
+  const eg=c.createGain();eg.gain.value=0;am.connect(eg);
+  const eo=c.createOscillator();eo.type="triangle";eo.frequency.value=50;const eog=c.createGain();eog.gain.value=.25;eo.connect(eog);eog.connect(eg);
+  eg.connect(m);ns2.start();lfo.start();eo.start();Object.assign(this,{eg,lfo,eo});
+  }catch(e){this.ctx=null}
+ },
+ resume(){if(this.ctx&&this.ctx.state==="suspended")this.ctx.resume()},
+ update(s){
+  if(!this.ctx)return;const t=this.ctx.currentTime,on=this.on?1:0;
+  const over=s.pin>s.arm/(PLAN?PR:1)+5;
+  const f=32+s.arm*7+(over?s.pin*2.2:0);
+  this.o1.frequency.setTargetAtTime(f,t,.05);this.o2.frequency.setTargetAtTime(f*1.012,t,.05);
+  this.mlp.frequency.setTargetAtTime(350+s.arm*45+(over?1200:0),t,.05);
+  let mv=s.arm>.2?Math.min(.2,.035+s.arm*.0085):0;
+  if(s.engine==="crank")mv*=.6+.4*(.5+.5*Math.sin(s.ringAng*2));
+  this.mg.gain.setTargetAtTime(mv*on,t,.03);
+  const meshing=s.key&&s.plg>.35&&s.plg<.85;
+  const grind=s.contact&&s.plg>.8?(over?.09:.045):(meshing?.07:0);
+  this.gg.gain.setTargetAtTime(grind*on,t,.03);this.gbp.frequency.setTargetAtTime(1600+s.pin*45,t,.05);
+  const eng=s.engine==="run"?.55:(s.engine==="crank"?.14*(.5+.5*Math.sin(s.ringAng*2)):0);
+  this.eg.gain.setTargetAtTime(eng*on,t,.08);
+  this.lfo.frequency.setTargetAtTime(s.engine==="run"?25:Math.max(2,s.ring*.32),t,.1);
+ },
+ hit(level,freq){
+  if(!this.ctx||!this.on)return;const c=this.ctx,t=c.currentTime;
+  const src=c.createBufferSource();src.buffer=this.nb;const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=freq||1200;
+  const g=c.createGain();g.gain.setValueAtTime(level,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);src.connect(lp);lp.connect(g);g.connect(this.master);src.start(t);src.stop(t+.15);
+  const o=c.createOscillator();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(55,t+.1);
+  const og=c.createGain();og.gain.setValueAtTime(level*.8,t);og.gain.exponentialRampToValueAtTime(.001,t+.14);o.connect(og);og.connect(this.master);o.start(t);o.stop(t+.16);
+ }
+};
+
+/* ---- physics of one start ---- */
+function stepSim(dt){
+ const k=sim.key;
+ if(k)sim.plg=Math.min(1,sim.plg+dt*(sim.plg<.6?3.0:1.8));else sim.plg=Math.max(0,sim.plg-dt*4.5);
+ if(!sim.contact&&k&&sim.plg>=.985){sim.contact=true;sim.contactT=0;SND.hit(.9,900);buzz(45)}
+ if(sim.contact&&sim.plg<.9){sim.contact=false;SND.hit(.35,1600)}
+ const meshed=sim.plg>.8;
+ sim.iHold=(k||sim.contact)?1:0;
+ sim.iPull=k?(sim.contact?0:1):(sim.contact?-1:0);
+ const mmf=sim.iHold*.45+sim.iPull*.55;
+ const tS=Math.abs(mmf)<.15?0:Math.min(1,Math.abs(mmf));
+ sim.sSol+=(tS-sim.sSol)*Math.min(1,dt*(tS>sim.sSol?9:16));
+ if(sim.contact){sim.contactT+=dt;if(sim.engine==="off"){sim.engine="crank";sim.crankT=0}}
+ if(sim.engine==="crank"){if(!sim.contact)sim.engine="off";else{sim.crankT+=dt;if(sim.fuel&&sim.crankT>2.4){sim.engine="run";SND.hit(.7,400);buzz(140)}}}
+ const ripple=sim.engine==="crank"?Math.sin(sim.ringAng*2):0;
+ let armT=0;
+ const AF=PLAN?3.5:1;
+ if(sim.contact)armT=(sim.engine==="run"?26:19*(1+.12*ripple))*AF;
+ else if(k&&sim.iPull>0)armT=3.2*AF;
+ sim.arm+=(armT-sim.arm)*Math.min(1,dt*(armT>sim.arm?4.5:1.1));
+ if(sim.engine==="run")sim.ring+=(8-sim.ring)*Math.min(1,dt*1.6);
+ else if(sim.contact&&meshed)sim.ring=sim.arm/(PLAN?PR:1)/9.6;
+ else sim.ring*=1-Math.min(1,dt*1.0);
+ const outW=sim.arm/(PLAN?PR:1);
+ sim.pin=(meshed&&sim.ring*9.6>outW)?sim.ring*9.6:outW;
+ sim.iMain=sim.contact?(sim.engine==="run"?65:115+190*Math.exp(-sim.contactT*3.2)+28*ripple):0;
+ const tF=sim.iMain>0?Math.min(1,sim.iMain/150):0;
+ sim.sField+=(tF-sim.sField)*Math.min(1,dt*(tF>sim.sField?8:12));
+ sim.relT=k?0:sim.relT+dt;
+ sim.ringAng+=sim.ring*dt;
+ if(sim.engine==="crank"){sim.vibT-=dt;if(sim.vibT<=0){buzz(40);sim.vibT=.2}}
+ sim.shake=sim.engine==="crank"?.05*(.7+.3*ripple):(sim.engine==="run"?.016:(sim.contact?.025:0));
+ const ph=k?(!sim.contact?(sim.plg<.3?1:2):(sim.engine==="run"?5:(sim.contactT<.7?3:4))):(sim.plg>.03?6:(sim.phase>=1?7:0));
+ if(ph!==sim.phase){sim.phase=ph;renderPhase(ph)}
+}
+
+function loop(){
+ requestAnimationFrame(loop);
+ const rdt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+ const dt=(mode==="work"&&sim.slow)?rdt*.25:rdt;
+ if(mode==="work")stepSim(dt);
+ else{sim.plg=Math.max(0,sim.plg-dt*4);sim.arm*=1-Math.min(1,dt*2);sim.ring*=1-Math.min(1,dt*2);sim.pin=sim.arm;sim.sSol*=.85;sim.sField*=.85;sim.iMain=sim.iPull=sim.iHold=0;sim.shake=0;sim.contact=false}
+ plungerG.position.x=1.13*sim.plg;
+ leverPivot.rotation.z=-.4*sim.plg;
+ rspringMesh.scale.x=1-.45*sim.plg;
+ armSpin.rotation.x+=sim.arm*dt;
+ driveSpin.rotation.x+=sim.pin*dt;
+ ringSpin.rotation.x-=sim.ring*dt;
+ let wc=sim.arm/PR;
+ if(inspSpin.t>0){inspSpin.t-=rdt;driveSpin.rotation.x+=inspSpin.w*rdt;if(inspSpin.lock){armSpin.rotation.x+=inspSpin.w*rdt*(PLAN?PR:1);wc+=inspSpin.w}}
+ if(PLAN&&PL.carrier){PL.carrier.rotation.x+=wc*dt;PL.outSpin.rotation.x+=wc*dt;const rel=-wc*(PR-1)*ZS/ZP*dt;PL.planets.forEach(p=>p.rotation.x+=rel);PL.badPlanet.rotation.x+=rel}
+ Object.keys(G).forEach(n=>{
+  const o=G[n].userData.off,e=tgt.explode[n]||[0,0,0],q=Math.min(1,rdt*3);
+  o.x+=(e[0]-o.x)*q;o.y+=(e[1]-o.y)*q;o.z+=(e[2]-o.z)*q;G[n].position.copy(o);
+ });
+ G.drive.position.x+=-1.17*sim.plg;
+ ROOT.position.set((Math.random()-.5)*sim.shake,(Math.random()-.5)*sim.shake,(Math.random()-.5)*sim.shake*.5);
+ flow.main=sim.iMain>0;flow.ctrl=sim.key;
+ updateFX(dt);
+ if(mode==="work"){updateLiveSim();updateGauges();scopeTick(rdt)}
+ SND.update(sim);
+ if(camTween){camera.position.lerp(camTween.p,Math.min(1,rdt*3.2));controls.target.lerp(camTween.t,Math.min(1,rdt*3.2));if(camera.position.distanceTo(camTween.p)<.05)camTween=null}
+ controls.update();
+ paintEmissive(t);
+ renderer.render(scene,camera);
+ placeTag();
+}
+
+
+/* ================= UI: shared ================= */
+function post(){try{if(window.parent!==window)window.parent.postMessage({dmHeight:document.documentElement.scrollHeight},"*")}catch(e){}}
+try{new ResizeObserver(post).observe(document.body)}catch(e){}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* ---- voice narration ---- */
+let voiceOn=false;try{voiceOn=localStorage.getItem("sm3d-voice")==="1"}catch(e){}
+const VLANG={gu:"gu-IN",hi:"hi-IN",en:"en-IN"};
+const hasTTS=!!(window.speechSynthesis&&window.SpeechSynthesisUtterance);
+function pickVoice(){if(!hasTTS)return null;const vs=speechSynthesis.getVoices(),w=VLANG[LANG].slice(0,2);return vs.find(v=>(v.lang||"").toLowerCase().replace("_","-")===VLANG[LANG].toLowerCase())||vs.find(v=>(v.lang||"").toLowerCase().startsWith(w))||null}
+function speak(txt){if(!voiceOn||!hasTTS||!txt)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang=VLANG[LANG];const v=pickVoice();if(v)u.voice=v;u.rate=LANG==="en"?1:.95;speechSynthesis.speak(u)}catch(e){}}
+function voiceNote(){const n=$("vnote");if(!voiceOn||!hasTTS){n.hidden=true;return}const vs=speechSynthesis.getVoices();if(vs.length&&!pickVoice()){n.textContent=tr("noVoice");n.hidden=false}else n.hidden=true;post()}
+if(hasTTS){try{speechSynthesis.addEventListener("voiceschanged",voiceNote)}catch(e){}}else $("voiceBtn").hidden=true;
+$("voiceBtn").addEventListener("click",()=>{voiceOn=!voiceOn;$("voiceBtn").setAttribute("aria-pressed",voiceOn);try{localStorage.setItem("sm3d-voice",voiceOn?"1":"0")}catch(e){}if(voiceOn)speak(tr("voiceOn"));else if(hasTTS)speechSynthesis.cancel();voiceNote()});
+
+/* ================= PARTS TAB ================= */
+let curPart=-1;
+const chipsEl=$("chips");
+function renderChips(){chipsEl.innerHTML=Object.entries(GRP).filter(([g])=>PLAN||g!=="plan").map(([g,name])=>`<div class="chipgrp"><h3>${esc(L(name))}</h3><div class="chiprow">${PARTS.filter(p=>p.grp===g).map(p=>`<button class="chip" data-pick="${p.id}" aria-pressed="${curPart===p.n-1}"><b>${p.n}</b>${esc(L(p.name))}</button>`).join("")}</div></div>`).join("")}
+function showPart(id,focus,say){
+ const p=BY[id];if(!p)return;curPart=p.n-1;
+ if(has3D){setHL([id]);if(focus)focusPart(id)}
+ $("pNum").textContent=p.n;$("pName").textContent=L(p.name);$("pEn").textContent=LANG==="en"?p.name[0]:p.name[2];$("pGrp").textContent=L(GRP[p.grp]);$("pDesc").textContent=L(p.desc);
+ chipsEl.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.pick===id));
+ if(say)speak(L(p.name)+". "+L(p.desc));
+}
+function clearPart(){curPart=-1;if(has3D&&mode==="parts")setHL([]);$("pNum").textContent="—";$("pName").textContent=tr("whole");$("pEn").textContent=tr("pCount").replace("{n}",visParts().length);$("pGrp").textContent=tr("starter");$("pDesc").textContent=tr("pDefault");chipsEl.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false"))}
+function onPick(id){
+ if(mode==="parts")showPart(id,false,true);
+ else if(mode==="quiz"&&!qDone){}
+ else if(has3D)setHL([id]);
+}
+chipsEl.addEventListener("click",e=>{const b=e.target.closest(".chip");if(b){showPart(b.dataset.pick,true,true);$("viewer").scrollIntoView({behavior:"smooth",block:"nearest"})}});
+const visParts=()=>PARTS.filter(p=>PLAN||p.grp!=="plan");
+function stepPart(d){const v=visParts();let k=v.findIndex(p=>p.n-1===curPart);k=k<0?(d>0?0:v.length-1):(k+d+v.length)%v.length;showPart(v[k].id,true,true)}
+$("pNext").onclick=()=>stepPart(1);
+$("pPrev").onclick=()=>stepPart(-1);
+$("pAll").onclick=clearPart;
+
+/* ================= SIMULATOR TAB ================= */
+function renderPhases(){$("phases").innerHTML=PH.map((p,i)=>`<li data-i="${i}" class="${i===sim.phase?"on":""}"><b>${i}</b>${esc(L(p.t))}</li>`).join("")}
+function renderPhase(i){
+ const p=PH[i];$("phTitle").textContent=L(p.t);
+ const x=(i===7&&sim.engine!=="run"&&p.x2)?L(p.x2):L(p.x);
+ $("phText").textContent=x;$("phNote").textContent=L(p.n);
+ $("phases").querySelectorAll("li").forEach((l,j)=>l.classList.toggle("on",j===i));
+ if(mode==="work"&&i>0)speak(L(p.t)+". "+x);
+ post();
+}
+let lastG=0;
+function updateGauges(){
+ const now=performance.now();if(now-lastG<110)return;lastG=now;
+ $("gKey").textContent=sim.key?"START":(sim.engine==="run"?"ON":"OFF");
+ $("gAmp").textContent=Math.round(sim.iMain+(sim.iPull>0?40:0)+(sim.iHold?12:0))+" A";
+ $("gArm").textContent=Math.round(sim.arm*105)+" rpm";
+ $("gEng").textContent=sim.engine==="run"?Math.round(sim.ring*100)+" rpm":(sim.engine==="crank"?Math.round(sim.ring*100)+" rpm "+tr("crank"):tr("off"));
+}
+let liveKey="";
+function updateLiveSim(){
+ const Lv=[];
+ if(sim.iPull!==0)Lv.push("pullin");
+ if(sim.iHold){Lv.push("holdin");if(sim.key)Lv.push("termS")}
+ if(sim.iMain>0)Lv.push("termB","termM","contact","strap","fterm","field","brush","comm","winding");
+ if(sim.engine==="run"&&sim.plg>.8)Lv.push("clutch","rollers");
+ const kk=Lv.join();if(kk!==liveKey){liveKey=kk;setLive(Lv)}
+}
+/* oscilloscope */
+const SC={buf:new Float32Array(480),i:0,acc:0,ctx:null,w:0,h:0};
+function scopeTick(dt){
+ SC.acc+=dt;const step=8/480;
+ while(SC.acc>=step){SC.acc-=step;SC.buf[SC.i]=sim.iMain+(sim.iPull>0?40:(sim.iPull<0?20:0))+(sim.iHold?12:0);SC.i=(SC.i+1)%SC.buf.length}
+ drawScope();
+}
+function drawScope(){
+ const c=$("scope");if(!c)return;const r=c.getBoundingClientRect();if(!r.width)return;
+ const dpr=Math.min(window.devicePixelRatio||1,2),W=Math.round(r.width*dpr),H=Math.round(r.height*dpr);
+ if(c.width!==W||c.height!==H){c.width=W;c.height=H}
+ const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);const w=r.width,h=r.height,padL=34,padB=16,pw=w-padL-6,ph=h-padB-6,max=400;
+ g.fillStyle="#0f1d27";g.fillRect(0,0,w,h);
+ g.strokeStyle="rgba(125,255,176,.12)";g.lineWidth=1;g.font="10px "+getComputedStyle(document.body).getPropertyValue("--f-mono");g.fillStyle="#5f8a74";g.textAlign="right";
+ for(let a=0;a<=max;a+=100){const y=6+ph-(a/max)*ph;g.beginPath();g.moveTo(padL,y);g.lineTo(padL+pw,y);g.stroke();g.fillText(a+" A",padL-4,y+3)}
+ g.textAlign="center";for(let s=0;s<=8;s+=2){const x=padL+pw*(s/8);g.beginPath();g.moveTo(x,6);g.lineTo(x,6+ph);g.stroke();g.fillText((s-8)+" s",x,h-3)}
+ g.strokeStyle="#7dffb0";g.lineWidth=2;g.beginPath();const n=SC.buf.length;
+ for(let k=0;k<n;k++){const v=SC.buf[(SC.i+k)%n],x=padL+pw*(k/(n-1)),y=6+ph-Math.min(v,max)/max*ph;k?g.lineTo(x,y):g.moveTo(x,y)}
+ g.stroke();
+}
+function keyDown(){if(sim.key||mode!=="work")return;SND.init();SND.resume();sim.key=true;SND.hit(.22,2600);buzz(15);$("startBtn").classList.add("on")}
+function keyUp(){if(!sim.key)return;sim.key=false;SND.hit(.28,2200);$("startBtn").classList.remove("on")}
+{const sb=$("startBtn");
+ sb.addEventListener("pointerdown",e=>{e.preventDefault();try{sb.setPointerCapture(e.pointerId)}catch(_){}keyDown()});
+ ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>sb.addEventListener(ev,keyUp));
+ sb.addEventListener("contextmenu",e=>e.preventDefault());
+ sb.addEventListener("keydown",e=>{if((e.key===" "||e.key==="Enter")&&!e.repeat){e.preventDefault();keyDown()}});
+ sb.addEventListener("keyup",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();keyUp()}});}
+document.addEventListener("keydown",e=>{if(mode==="work"&&e.code==="Space"&&!e.repeat&&e.target===document.body){e.preventDefault();keyDown()}});
+document.addEventListener("keyup",e=>{if(mode==="work"&&e.code==="Space"&&e.target===document.body){e.preventDefault();keyUp()}});
+window.addEventListener("blur",keyUp);
+function refreshToggles(){
+ const set=(id,on,a,b)=>{const el=$(id);el.setAttribute("aria-pressed",on);el.textContent=on?tr(a):tr(b||a)};
+ set("wFuel",sim.fuel,"fuelOn","fuelOff");set("wSlow",sim.slow,"slow");set("wSnd",SND.on,"sndOn","sndOff");set("wVib",vibOn,"vibOn","vibOff");
+ $("wStop").textContent=tr("stopEng");
+ $("bCur").setAttribute("aria-pressed",curOn);$("bMag").setAttribute("aria-pressed",magOn);
+}
+$("wFuel").onclick=()=>{sim.fuel=!sim.fuel;refreshToggles()};
+$("wSlow").onclick=()=>{sim.slow=!sim.slow;refreshToggles()};
+$("wSnd").onclick=()=>{SND.on=!SND.on;SND.init();SND.resume();refreshToggles()};
+$("wVib").onclick=()=>{vibOn=!vibOn;refreshToggles();if(vibOn)buzz(30)};
+$("wStop").onclick=()=>{if(sim.key)return;sim.engine="off";sim.phase=0;renderPhase(0)};
+$("bCur").onclick=()=>{curOn=!curOn;refreshToggles()};
+$("bMag").onclick=()=>{magOn=!magOn;refreshToggles()};
+
+/* ================= DISMANTLE TAB ================= */
+let di=0;
+$("dDots").innerHTML=D.map((s,i)=>`<button class="dot" data-i="${i}" aria-label="${i}">${i}</button>`).join("");
+$("dDots").addEventListener("click",e=>{const b=e.target.closest(".dot");if(b)applyDis(+b.dataset.i,true)});
+function applyDis(i,say){
+ di=i;const acc={};for(let k=0;k<=i;k++)Object.assign(acc,D[k].m);
+ if(mode==="dis"){tgt.explode=acc;if(has3D)setHL(D[i].g?[D[i].g]:[])}
+ $("dTitle").textContent=L(D[i].t);$("dText").textContent=L(D[i].x);$("dNote").textContent=L(D[i].n)+(PLAN&&D[i].np?" ⚙️ "+L(D[i].np):"");
+ $("dDots").querySelectorAll(".dot").forEach((d,j)=>{if(j===i)d.setAttribute("aria-current","step");else d.removeAttribute("aria-current")});
+ $("dPrev").disabled=i===0;$("dNext").disabled=i===D.length-1;
+ if(say)speak(L(D[i].t)+". "+L(D[i].x));
+}
+$("dNext").onclick=()=>{if(di<D.length-1)applyDis(di+1,true)};
+$("dPrev").onclick=()=>{if(di>0)applyDis(di-1,true)};
+$("dReset").onclick=()=>applyDis(0,true);
+
+/* ================= VISUAL INSPECTION TAB ================= */
+let ii=0,jobNo=1,job=[],jobOpt=[],compareGood=false;const iRes={};
+function newJob(first){
+ if(!first)jobNo++;
+ job=INSP.map(it=>Math.random()<.42?"ok":it.defects[Math.floor(Math.random()*it.defects.length)].d);
+ jobOpt=INSP.map(it=>shuffle(["ok",...it.defects.map(d=>d.d),...(it.distract?["x"]:[])]));
+ Object.keys(iRes).forEach(k=>delete iRes[k]);
+ renderIList();renderReport();openInsp(0);
+}
+function optText(it,k){if(k==="ok")return L(OKF);if(k==="x")return L(it.distract);const d=it.defects.find(d=>d.d===k);return d?L(d.f):k}
+function renderIList(){
+ $("iList").innerHTML=INSP.map((it,i)=>{const r=iRes[i];return `<button data-i="${i}" aria-pressed="${i===ii}" class="${r?(r.ok?"done":"miss"):""}"><b>${i+1}</b>${esc(L(it.name))}</button>`}).join("");
+ const n=Object.keys(iRes).length,ok=Object.values(iRes).filter(r=>r.ok).length;$("iScore").textContent=ok+" / "+n;
+}
+$("iList").addEventListener("click",e=>{const b=e.target.closest("button");if(b){openInsp(+b.dataset.i);$("viewer").scrollIntoView({behavior:"smooth",block:"nearest"})}});
+function show3DInsp(){
+ if(!has3D||mode!=="insp")return;const it=INSP[ii];
+ applyXray(false);applyCut(!!it.inside);
+ applyDefect(compareGood?"ok":job[ii]);
+ hlGlow=false;setHL([it.part[0]]);focusPart(it.part[0],it.dist);
+}
+function openInsp(i){
+ ii=i;compareGood=false;const it=INSP[i],r=iRes[i];
+ if(it.plan&&!PLAN&&mode==="insp")setPlan(true,true),planChanged(true);
+ $("iList").querySelectorAll("button").forEach((b,j)=>b.setAttribute("aria-pressed",j===i));
+ $("iName").textContent=(i+1)+". "+L(it.name);
+ $("iJob").textContent=tr("jobNo")+" "+jobNo;
+ $("iLookTxt").textContent=L(it.look);
+ $("iClutch").hidden=!it.clutch;$("iRotRes").textContent="";
+ $("iOpts").innerHTML=jobOpt[i].map(k=>`<button class="opt" data-k="${k}">${esc(optText(it,k))}</button>`).join("");
+ $("iFb").hidden=true;$("iCompare").hidden=true;
+ if(r)markInsp(false);
+ show3DInsp();post();
+}
+function markInsp(say){
+ const it=INSP[ii],r=iRes[ii],act=job[ii];
+ $("iOpts").querySelectorAll(".opt").forEach(b=>{if(b.dataset.k===act)b.classList.add("right");else if(b.dataset.k===r.pick)b.classList.add("wrong")});
+ const fix=act==="ok"?L(OKFIX):L(it.fix);
+ const msg=(r.ok?tr("right"):tr("wrong")+" "+tr("actual")+": "+optText(it,act)+".")+" "+fix;
+ const fb=$("iFb");fb.hidden=false;fb.className="fb "+(r.ok?"ok":"no");fb.textContent=msg;
+ if(act!=="ok"){$("iCompare").hidden=false;$("iCompare").textContent=compareGood?tr("showBad"):tr("showGood")}
+ if(say)speak(msg);post();
+}
+$("iOpts").addEventListener("click",e=>{
+ const b=e.target.closest(".opt");if(!b||iRes[ii])return;
+ iRes[ii]={pick:b.dataset.k,ok:b.dataset.k===job[ii]};
+ markInsp(true);renderIList();renderReport();
+});
+$("iCompare").onclick=()=>{compareGood=!compareGood;$("iCompare").textContent=compareGood?tr("showBad"):tr("showGood");show3DInsp()};
+function clutchTurn(fwd){
+ const st=compareGood?"ok":job[ii];const lock=fwd?(st!=="slip"):(st==="seized");
+ inspSpin.t=1.8;inspSpin.w=fwd?4.2:-4.2;inspSpin.lock=lock;
+ SND.init();SND.resume();SND.hit(.12,lock?900:3000);
+ $("iRotRes").textContent=lock?tr("cLock"):tr("cFree");
+}
+$("iRotF").onclick=()=>clutchTurn(true);$("iRotR").onclick=()=>clutchTurn(false);
+$("iNewJob").onclick=()=>newJob(false);
+function renderReport(){
+ const rows=INSP.map((it,i)=>{const r=iRes[i];if(!r)return "";const act=job[i];
+  return `<tr class="${r.ok?"ok":"no"}"><td>${i+1}</td><td>${esc(L(it.name))}</td><td>${esc(optText(it,r.pick))}</td><td>${r.ok?"✓":"✗"} ${esc(optText(it,act))}</td><td>${esc(act==="ok"?L(OKFIX):L(it.fix))}</td></tr>`}).join("");
+ $("iRep").innerHTML=rows;$("iRepEmpty").hidden=!!rows;$("iRepWrap").hidden=!rows;post();
+}
+
+/* ================= TEST LAB TAB ================= */
+let ti=0,sample=null,measured=false;const score={ok:0,all:0},tDone=new Set();
+function renderTList(){$("tList").innerHTML=TESTS.map((t,i)=>`<button data-i="${i}" aria-pressed="${i===ti}" class="${tDone.has(i)?"done":""}"><b>${i+1}</b>${esc(L(t.name))}</button>`).join("")}
+$("tList").addEventListener("click",e=>{const b=e.target.closest("button");if(b){openTest(+b.dataset.i,true);$("viewer").scrollIntoView({behavior:"smooth",block:"nearest"})}});
+function renderTest(){
+ const t=TESTS[ti];
+ $("tName").textContent=L(t.name);$("tAim").textContent=L(t.aim);$("tTool").textContent=L(t.tool);$("tSpec").textContent=L(t.spec);
+ $("tSteps").innerHTML=t.steps.map(s=>`<li>${esc(L(s))}</li>`).join("");
+ $("tCap").textContent=L(t.cap);
+ if(sample){$("tSample").textContent=tr("sample")+" "+String.fromCharCode(65+sample.k);if(measured)$("tVal").textContent=L(t.s[sample.k].v)}
+}
+function openTest(i,say){
+ ti=i;const t=TESTS[i];
+ $("tList").querySelectorAll("button").forEach((b,j)=>b.setAttribute("aria-pressed",j===i));
+ if(has3D&&mode==="test"){setHL(t.parts);focusPart(t.parts[0])}
+ newSample();renderTest();
+ if(say)speak(L(t.name)+". "+L(t.aim));
+}
+function newSample(){
+ const t=TESTS[ti];let k;do{k=Math.floor(Math.random()*t.s.length)}while(t.s.length>1&&sample&&sample.t===ti&&k===sample.k);
+ sample={t:ti,k};measured=false;
+ $("tSample").textContent=tr("sample")+" "+String.fromCharCode(65+k);$("tCap").textContent=L(t.cap);$("tVal").textContent="– – –";
+ $("tGood").disabled=true;$("tBad").disabled=true;$("tMeasure").disabled=false;$("tFb").hidden=true;post();
+}
+$("tNew").onclick=newSample;
+$("tMeasure").onclick=()=>{const t=TESTS[ti];$("tMeasure").disabled=true;$("tVal").textContent=tr("measuring");setTimeout(()=>{$("tVal").textContent=L(t.s[sample.k].v);measured=true;$("tGood").disabled=false;$("tBad").disabled=false},650)};
+function verdict(saysGood){
+ if(!measured)return;const t=TESTS[ti],good=!!t.s[sample.k].g,right=saysGood===good;
+ score.all++;if(right){score.ok++;tDone.add(ti)}$("tScore").textContent=score.ok+" / "+score.all;
+ const fb=$("tFb");fb.hidden=false;fb.className="fb "+(right?"ok":"no");
+ const msg=(right?tr("right"):tr("wrong")+" "+(good?tr("isGood"):tr("isBad")))+" "+L(good?t.ok:t.bad);
+ fb.textContent=msg;speak(msg);
+ renderTList();$("tGood").disabled=true;$("tBad").disabled=true;post();
+}
+$("tGood").onclick=()=>verdict(true);$("tBad").onclick=()=>verdict(false);
+
+/* ================= THEORY TAB ================= */
+function curvesSVG(){
+ const pts=[];for(let I=25;I<=312;I+=6){const V=12.6-.018*I,Eb=Math.max(0,V-.022*I),phi=I/(1+I/220),n=Eb/phi,T=phi*I,P=Eb*I;pts.push({I,n,T,P})}
+ const mx=k=>Math.max(...pts.map(p=>p[k])),nM=mx("n"),TM=mx("T"),PM=mx("P");
+ const W=560,H=260,l=46,r=W-14,t=14,b=H-34,X=I=>l+(I/350)*(r-l),Y=v=>b-v*(b-t);
+ const path=(k,M)=>pts.map((p,i)=>(i?"L":"M")+X(p.I).toFixed(1)+" "+Y(Math.min(1,p[k]/M)).toFixed(1)).join(" ");
+ let grid="";for(let I=0;I<=350;I+=50){grid+=`<line x1="${X(I)}" y1="${t}" x2="${X(I)}" y2="${b}" class="gl"/><text x="${X(I)}" y="${b+16}" class="tk" text-anchor="middle">${I}</text>`}
+ for(let v=0;v<=1;v+=.25){grid+=`<line x1="${l}" y1="${Y(v)}" x2="${r}" y2="${Y(v)}" class="gl"/>`}
+ const lp=(k,M,i)=>{const p=pts[i];return [X(p.I),Y(Math.min(1,p[k]/M))]};
+ const [sx,sy]=lp("n",nM,6),[tx,ty]=lp("T",TM,pts.length-6),[px,py]=lp("P",PM,Math.round(pts.length/2));
+ return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${esc(L(TH.gTitle))}">${grid}
+ <line x1="${l}" y1="${b}" x2="${r}" y2="${b}" class="ax"/><line x1="${l}" y1="${t}" x2="${l}" y2="${b}" class="ax"/>
+ <path d="${path("n",nM)}" class="c1"/><path d="${path("T",TM)}" class="c2"/><path d="${path("P",PM)}" class="c3"/>
+ <text x="${sx+8}" y="${sy+4}" class="lb c1t">${esc(L(TH.speed))}</text><text x="${tx-6}" y="${ty-8}" class="lb c2t" text-anchor="end">${esc(L(TH.torque))}</text><text x="${px}" y="${py-10}" class="lb c3t" text-anchor="middle">${esc(L(TH.power))}</text>
+ <text x="${(l+r)/2}" y="${H-2}" class="tk" text-anchor="middle">${esc(L(TH.axis))}</text></svg>`;
+}
+function circuitSVG(){
+ const T=k=>esc(L(TH[k]));
+ return `<svg viewBox="0 0 640 300" class="circ" role="img" aria-label="${T("cTitle")}">
+ <g class="wireM"><path d="M70 120 V40 H452"/><path d="M548 120 H592 V170"/><path d="M592 262 V284 H70 V200"/></g>
+ <g class="wireC"><path d="M70 80 H150"/><path d="M230 80 H290"/><path d="M370 80 H400 V100 H420"/></g>
+ <rect x="30" y="120" width="80" height="80" rx="6" class="bx"/><text x="70" y="150" class="tt" text-anchor="middle">${T("bat")}</text><text x="70" y="172" class="tm" text-anchor="middle">12 V</text>
+ <rect x="150" y="62" width="80" height="36" rx="6" class="bx"/><text x="190" y="114" class="ts" text-anchor="middle">${T("ign")}</text><text x="190" y="85" class="tm" text-anchor="middle">START</text>
+ <rect x="290" y="62" width="80" height="36" rx="6" class="bx"/><text x="330" y="114" class="ts" text-anchor="middle">${T("nss")}</text><text x="330" y="85" class="tm" text-anchor="middle">N</text>
+ <rect x="420" y="30" width="128" height="104" rx="8" class="bx"/><text x="484" y="76" class="tt" text-anchor="middle">${T("sol")}</text>
+ <text x="452" y="26" class="tm" text-anchor="middle">B/30</text><text x="410" y="96" class="tm" text-anchor="end">S/50</text><text x="560" y="114" class="tm">M</text>
+ <circle cx="592" cy="216" r="40" class="bx"/><path d="M572 196 l8 -6 l8 12 l8 -12 l8 12 l8 -6" class="zig"/><circle cx="592" cy="226" r="14" class="arm"/>
+ <text x="592" y="276" class="ts" text-anchor="middle">${T("mot")}</text>
+ <path d="M60 284 h20 M64 290 h12 M68 296 h4" class="gnd"/>
+ <g transform="translate(30 236)"><line x1="0" y1="0" x2="26" y2="0" class="wireM"/><text x="32" y="4" class="ts">${T("main")}</text><line x1="0" y1="18" x2="26" y2="18" class="wireC"/><text x="32" y="22" class="ts">${T("ctrl")}</text></g>
+ </svg>`;
+}
+function planSVG(){
+ const n=id=>esc(L(BY[id].name)),cx=170,cy=150,R=118,ri=104,orb=66,rs=30,rp=34;
+ let teeth="";for(let i=0;i<40;i++){const a=i/40*2*Math.PI;teeth+=`<line x1="${cx+ri*Math.cos(a)}" y1="${cy+ri*Math.sin(a)}" x2="${cx+(ri+9)*Math.cos(a)}" y2="${cy+(ri+9)*Math.sin(a)}" class="pt"/>`}
+ let pl="",tri="";const P=[];for(let k=0;k<3;k++){const a=-Math.PI/2+k*2*Math.PI/3,x=cx+orb*Math.cos(a),y=cy+orb*Math.sin(a);P.push([x,y]);pl+=`<circle cx="${x}" cy="${y}" r="${rp}" class="pp"/><circle cx="${x}" cy="${y}" r="5" class="pin"/>`}
+ tri=`<polygon points="${P.map(p=>p.join(",")).join(" ")}" class="pc"/>`;
+ return `<svg viewBox="0 0 560 300" class="circ plan" role="img" aria-label="${esc(L(TH.plTitle))}">
+ <circle cx="${cx}" cy="${cy}" r="${R+12}" class="pr"/><circle cx="${cx}" cy="${cy}" r="${ri}" class="prin"/>${teeth}${tri}${pl}<circle cx="${cx}" cy="${cy}" r="${rs}" class="ps"/>
+ <g class="ts"><text x="330" y="60">● ${n("ringgear")}</text><text x="330" y="100" class="t2">● ${n("planet")}</text><text x="330" y="140" class="t3">● ${n("sun")}</text><text x="330" y="180" class="t4">▲ ${n("carrier")}</text>
+ <text x="330" y="230" class="tm">Z: 40 / 15 / 10 → 5 : 1</text></g></svg>`;
+}
+function renderTheory(){
+ $("thBody").innerHTML=`
+ <div class="panel"><h2>${esc(L(TH.cTitle))}</h2><div class="svgwrap">${circuitSVG()}</div><p>${esc(L(TH.cTxt))}</p></div>
+ <div class="panel"><h2>${esc(L(TH.mTitle))}</h2>
+  <div class="eqs"><code>E<sub>b</sub> = V − I · (R<sub>a</sub> + R<sub>f</sub> + R<sub>brush</sub>)</code><code>T ∝ Φ · I ,  Φ ∝ I  ⇒  T ∝ I²</code><code>N ∝ E<sub>b</sub> ÷ Φ</code></div>
+  <p>${esc(L(TH.mTxt))}</p><div class="note">${esc(L(TH.ex))}</div><div class="note warn">⚠️ ${esc(L(TH.warn))}</div></div>
+ <div class="panel"><h2>${esc(L(TH.gTitle))}</h2><div class="svgwrap">${curvesSVG()}</div><p>${esc(L(TH.gTxt))}</p></div>
+ <div class="panel"><h2>${esc(L(TH.rTitle))}</h2><p>${esc(L(TH.rTxt))}</p></div>
+ <div class="panel"><h2>${esc(L(TH.plTitle))}</h2><div class="svgwrap">${planSVG()}</div><div class="eqs"><code>i = (Z<sub>ring</sub> + Z<sub>sun</sub>) ÷ Z<sub>sun</sub></code><code>N<sub>carrier</sub> = N<sub>sun</sub> ÷ i ,  T<sub>carrier</sub> ≈ T<sub>sun</sub> × i</code></div><p>${esc(L(TH.plTxt))}</p><div class="note">${esc(L(TH.plEx))}</div></div>
+ <div class="panel"><h2>${esc(L(TH.tTitle))}</h2><div class="tblwrap"><table class="rep"><thead><tr>${TH.tCols.map(c=>`<th>${esc(L(c))}</th>`).join("")}</tr></thead><tbody>${TH.tRows.map(r=>`<tr>${r.map(c=>`<td>${esc(L(c))}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>
+ <div class="panel"><h2>${esc(L(TH.pTitle))}</h2><ul class="plist">${TH.pList.map(x=>`<li>${esc(L(x))}</li>`).join("")}</ul></div>`;
+ post();
+}
+
+/* ================= QUIZ TAB ================= */
+let qi=0,qs=0,qDone=false;
+function showQ(i,keep){
+ qi=i;if(!keep)qDone=false;const q=Q[i];
+ if(q.plan&&!PLAN&&mode==="quiz"){setPlan(true,true);planChanged(true)}
+ $("qHead").textContent=`${tr("q")} ${i+1} / ${Q.length}`;$("qText").textContent=L(q.q);
+ $("qOpts").innerHTML=q.o.map((o,j)=>`<button class="opt" data-j="${j}">(${"ABCD"[j]}) ${esc(L(o))}</button>`).join("");
+ $("qFb").hidden=true;$("qNext").textContent=i===Q.length-1?tr("qAgain"):tr("qNext");$("qScore").textContent=qs+" "+tr("correctN");
+ if(has3D&&mode==="quiz"){if(q.show){hlGlow=true;setHL(q.show);tagPart=null;$("tag").hidden=true;focusPart(q.show[0])}else{setHL([]);goView("quiz")}}
+ if(!keep)speak(L(q.q));
+ post();
+}
+$("qOpts").addEventListener("click",e=>{
+ const b=e.target.closest(".opt");if(!b||qDone)return;qDone=true;
+ const q=Q[qi],j=+b.dataset.j,btns=[...document.querySelectorAll("#qOpts .opt")];
+ btns[q.a].classList.add("right");if(j!==q.a)b.classList.add("wrong");else qs++;
+ $("qScore").textContent=qs+" "+tr("correctN");
+ const fb=$("qFb");fb.hidden=false;fb.className="fb "+(j===q.a?"ok":"no");
+ const msg=(j===q.a?tr("right")+" ":tr("wrong")+" "+tr("rightAns")+": "+L(q.o[q.a])+". ")+L(q.e);
+ fb.textContent=msg;speak(msg);
+ if(has3D){const ids=q.show||q.f||[];setHL(ids);if(ids[0]&&!q.show)focusPart(ids[0])}
+ post();
+});
+$("qNext").onclick=()=>{if(qi===Q.length-1){qs=0;showQ(0)}else showQ(qi+1)};
+
+/* ================= TABS / MODES ================= */
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function showTab(id){
+ tabs.forEach(t=>{const on=t.id===id;t.setAttribute("aria-selected",on);$(t.getAttribute("aria-controls")).hidden=!on});
+ setMode(id.slice(2));
+ try{localStorage.setItem("sm3d-tab",id)}catch(e){}
+ post();
+}
+function setMode(m){
+ const prev=mode;mode=m;
+ $("startBtn").hidden=m!=="work";$("bCur").hidden=m!=="work";$("bMag").hidden=m!=="work";
+ $("viewer").hidden=m==="theory";
+ if(!has3D)return;
+ keyUp();resetSim();
+ if(prev==="insp"&&m!=="insp"){resetDefects();hlGlow=true;applyCut(true)}
+ hlGlow=m!=="insp";
+ G.work.visible=(m==="work");FX.visible=(m==="work");
+ setLive([]);liveKey="";
+ tgt.explode={};setHL([]);
+ if(m==="parts"){goView("parts");if(curPart>=0)setHL([PARTS[curPart].id])}
+ if(m==="work"){goView("work");renderPhase(0)}
+ if(m==="dis"){goView("dis");applyDis(di)}
+ if(m==="insp"){show3DInsp()}
+ if(m==="test"){goView("test");setHL(TESTS[ti].parts);focusPart(TESTS[ti].parts[0])}
+ if(m==="quiz"){showQ(qi,false)}
+ if(m==="theory"&&hasTTS)speechSynthesis.cancel();
+}
+tabs.forEach(t=>t.addEventListener("click",()=>showTab(t.id)));
+function planChanged(silent){
+ renderChips();
+ if(curPart>=0&&!PLAN&&PARTS[curPart].grp==="plan")clearPart();else if(curPart<0)clearPart();
+ $("planInfo").hidden=!PLAN;applyDis(di,false);
+ if(mode==="insp"&&!silent)show3DInsp();
+ post();
+}
+$("bPlan").onclick=()=>{setPlan(!PLAN);if(PLAN&&mode==="parts")showPart("planet",true,true);else if(PLAN&&has3D&&mode!=="insp"&&mode!=="work"){}};
+$("bCut").onclick=()=>{if(has3D)applyCut(!cutOn)};
+$("bXray").onclick=()=>{if(has3D)applyXray(!xrayOn)};
+$("bSpin").onclick=()=>{if(!has3D)return;controls.autoRotate=!controls.autoRotate;$("bSpin").setAttribute("aria-pressed",controls.autoRotate)};
+$("bHome").onclick=()=>{if(mode==="insp")show3DInsp();else goView(mode)};
+
+/* ================= LANGUAGE APPLY ================= */
+function applyLang(){
+ document.documentElement.lang=LANG;
+ document.querySelectorAll("[data-t]").forEach(el=>{el.textContent=tr(el.dataset.t)});
+ document.querySelectorAll("[data-ta]").forEach(el=>{el.setAttribute("aria-label",tr(el.dataset.ta));el.title=tr(el.dataset.ta)});
+ document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===LANG));
+ renderChips();if(curPart>=0)showPart(PARTS[curPart].id,false,false);else clearPart();
+ renderPhases();renderPhase(sim.phase);
+ applyDis(di,false);
+ renderIList();{const keepAns=iRes[ii];openInsp(ii);if(keepAns&&compareGood===false){}}renderReport();
+ renderTList();renderTest();
+ renderTheory();
+ showQ(qi,false);
+ $("planInfo").hidden=!PLAN;$("bPlan").setAttribute("aria-pressed",PLAN);
+ refreshToggles();updateTag();voiceNote();post();
+}
+document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>{LANG=b.dataset.lang;try{localStorage.setItem("sm3d-lang",LANG)}catch(e){}if(hasTTS)speechSynthesis.cancel();applyLang()}));
+
+/* ================= INIT ================= */
+if(!has3D)$("vmsg").hidden=false;
+if(has3D){try{init3D()}catch(err){console.error(err);$("vmsg").hidden=false}}
+$("voiceBtn").setAttribute("aria-pressed",voiceOn);
+newJob(true);
+renderTList();openTest(0,false);
+applyLang();
+let start="t-work";const h=(location.hash||"").slice(1);const hm={work:"t-work",parts:"t-parts",dis:"t-dis",insp:"t-insp",test:"t-test",theory:"t-theory",quiz:"t-quiz"};
+if(hm[h])start=hm[h];else{try{const s=localStorage.getItem("sm3d-tab");if(s&&$(s))start=s}catch(e){}}
+showTab(start);
+
+})();
+</script>
+
+</body></html>
